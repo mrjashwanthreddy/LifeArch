@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,4 +32,20 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     // 3. Optimized delete (prevents fetching the entity just to delete it)
     void deleteByIdAndUserId(UUID id, UUID userId);
+
+    // Fetch all tasks for a user that overlap with a specific calendar window
+    @Query("""
+                SELECT t FROM Task t
+                WHERE t.user.id = :userId
+                AND (
+                    (t.rrule IS NULL AND t.dueDatetime >= :start AND t.dueDatetime <= :end)
+                    OR
+                    (t.rrule IS NOT NULL AND t.dueDatetime <= :end)
+                )
+            """)
+    List<Task> findTasksForCalendarWindow(
+            @Param("userId") UUID userId,
+            @Param("start") java.time.OffsetDateTime start,
+            @Param("end") java.time.OffsetDateTime end
+    );
 }

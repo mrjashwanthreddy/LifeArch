@@ -11,8 +11,9 @@ public record TaskRequest(
         String notes,
         String priority,
         OffsetDateTime dueDatetime,
-        Boolean isCompleted, // <-- Add this
-        Boolean isStarred,   // <-- Add this
+        String rrule,        // <-- ADD THIS LINE
+        Boolean isCompleted,
+        Boolean isStarred,
         UUID projectId,
         UUID groupId
 ) {}

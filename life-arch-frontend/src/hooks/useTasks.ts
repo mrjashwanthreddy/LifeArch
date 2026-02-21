@@ -119,3 +119,28 @@ export const useAddComment = (taskId: string) => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['task', taskId] }),
     });
 };
+
+export interface CalendarTask {
+    occurrenceId: string;
+    originalTaskId: string;
+    title: string;
+    priority?: string;
+    dueDatetime: string;
+    isCompleted: boolean;
+    isRecurring: boolean;
+}
+
+// Fetch calendar expanded tasks
+export const useCalendarTasks = (from: string, to: string) => {
+    return useQuery<CalendarTask[]>({
+        queryKey: ['calendarTasks', from, to],
+        queryFn: async () => {
+            // Safely URL-encode the ISO strings so Spring Boot accepts them
+            const safeFrom = encodeURIComponent(from);
+            const safeTo = encodeURIComponent(to);
+            const { data } = await api.get(`/tasks/calendar?from=${safeFrom}&to=${safeTo}`);
+            return data;
+        },
+        enabled: !!from && !!to,
+    });
+};

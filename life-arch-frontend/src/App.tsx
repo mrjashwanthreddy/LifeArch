@@ -5,11 +5,12 @@ import {
   Navigate,
   Outlet,
 } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "./store/authStore";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from './pages/Dashboard'; // We will create this next
+import Dashboard from "./pages/Dashboard";
+import CalendarView from "./pages/CalendarView";
 
 // 1. Initialize the Query Client
 const queryClient = new QueryClient();
@@ -23,15 +24,18 @@ const ProtectedRoute = () => {
 // --- Main App Component ---
 function App() {
   return (
-    // 2. Wrap the app
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
           <Route path="/app" element={<ProtectedRoute />}>
             <Route index element={<Dashboard />} />
+            <Route path="calendar" element={<CalendarView />} />{" "}
+            {/* <-- ADD THIS LINE */}
           </Route>
+
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
       </BrowserRouter>

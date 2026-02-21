@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // Open to public (Register/Login)
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll() // OpenAPI definitions
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated() // Everything else is locked down
                 )
 
