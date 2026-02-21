@@ -3,7 +3,9 @@ package life.arch.tasks.service;
 import life.arch.auth.entity.User;
 import life.arch.auth.utils.SecurityUtils;
 import life.arch.projects.entity.Project;
+import life.arch.projects.entity.TaskGroup;
 import life.arch.projects.repository.ProjectRepository;
+import life.arch.projects.repository.TaskGroupRepository;
 import life.arch.tasks.dto.*;
 import life.arch.tasks.entity.Subtask;
 import life.arch.tasks.entity.Task;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final TaskGroupRepository taskGroupRepository;
     private final ProjectRepository projectRepository;
     private final SubtaskRepository subtaskRepository;
     private final TaskCommentRepository taskCommentRepository;
@@ -49,6 +52,17 @@ public class TaskService {
             Project project = projectRepository.findByIdAndUserId(request.projectId(), currentUser.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Project not found or doesn't belong to user"));
             task.setProject(project);
+        }
+
+        // Attach Folder/Group if provided
+        if (request.groupId() != null) {
+            TaskGroup group = taskGroupRepository.findById(request.groupId())
+                    .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+            // Verify the group actually belongs to a project the user owns
+            if (!group.getProject().getUser().getId().equals(currentUser.getId())) {
+                throw new IllegalArgumentException("Access denied to this group");
+            }
+            task.setTaskGroup(group);
         }
 
         Task savedTask = taskRepository.save(task);
@@ -120,7 +134,7 @@ public class TaskService {
                 task.isCompleted(),
                 task.isStarred(),
                 task.getProject() != null ? task.getProject().getId() : null,
-                null, // Group ID mapped here later
+                task.getTaskGroup() != null ? task.getTaskGroup().getId() : null, // Group ID mapped here later
                 task.getCreatedAt()
         );
     }
@@ -191,5 +205,27 @@ public class TaskService {
 
         TaskComment saved = taskCommentRepository.save(comment);
         return new CommentDto(saved.getId(), saved.getContent(), saved.getCreatedAt());
+    }
+
+    @Transactional
+    public TaskResponse moveTask(UUID taskId, UUID newGroupId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+
+        // 1. Find the task
+        Task task = taskRepository.findByIdAndUserId(taskId, currentUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Task not found or access denied"));
+
+        // 2. Find the new group
+        TaskGroup group = taskGroupRepository.findById(newGroupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        // 3. Verify the user owns the new group's project
+        if (!group.getProject().getUser().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("Access denied to this group");
+        }
+
+        // 4. Update and save
+        task.setTaskGroup(group);
+        return mapToResponse(taskRepository.save(task));
     }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN color_hex VARCHAR(7) DEFAULT '#7aa39c';

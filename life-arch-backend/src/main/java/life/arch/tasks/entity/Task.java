@@ -4,13 +4,16 @@ import jakarta.persistence.*;
 import life.arch.auth.entity.User;
 import life.arch.common.entity.BaseEntity;
 import life.arch.projects.entity.Project;
-import lombok.Data;
+import life.arch.projects.entity.TaskGroup;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tasks")
-@Data
+@Getter
+@Setter
 public class Task extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -44,5 +47,9 @@ public class Task extends BaseEntity {
 
     @Column(name = "reminder_offset_mins")
     private Integer reminderOffsetMins;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private TaskGroup taskGroup;
 
 }
