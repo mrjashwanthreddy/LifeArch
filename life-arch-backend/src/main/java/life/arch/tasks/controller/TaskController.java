@@ -1,8 +1,7 @@
 package life.arch.tasks.controller;
 
 import jakarta.validation.Valid;
-import life.arch.tasks.dto.TaskRequest;
-import life.arch.tasks.dto.TaskResponse;
+import life.arch.tasks.dto.*;
 import life.arch.tasks.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -49,5 +48,31 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(@PathVariable UUID id) {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TaskDetailResponse> getTaskDetails(@PathVariable UUID id) {
+        return ResponseEntity.ok(taskService.getTaskDetails(id));
+    }
+
+    @PostMapping("/{id}/subtasks")
+    public ResponseEntity<SubtaskDto> addSubtask(
+            @PathVariable UUID id,
+            @Valid @RequestBody SubtaskDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.addSubtask(id, request));
+    }
+
+    @PutMapping("/{taskId}/subtasks/{subtaskId}")
+    public ResponseEntity<SubtaskDto> toggleSubtask(
+            @PathVariable UUID taskId,
+            @PathVariable UUID subtaskId) {
+        return ResponseEntity.ok(taskService.toggleSubtask(taskId, subtaskId));
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<CommentDto> addComment(
+            @PathVariable UUID id,
+            @Valid @RequestBody CommentDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.addComment(id, request));
     }
 }
