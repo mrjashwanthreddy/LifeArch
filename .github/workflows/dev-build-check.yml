@@ -24,6 +24,10 @@ jobs:
           distribution: "temurin"
           cache: maven
 
+      - name: Make mvnw executable
+        working-directory: life-arch-backend
+        run: chmod +x mvnw
+
       - name: Build with Maven (skip tests)
         working-directory: life-arch-backend
         run: ./mvnw clean package -DskipTests
