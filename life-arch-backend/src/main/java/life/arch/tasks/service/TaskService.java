@@ -4,27 +4,30 @@ import life.arch.auth.entity.User;
 import life.arch.auth.utils.SecurityUtils;
 import life.arch.projects.entity.Project;
 import life.arch.projects.repository.ProjectRepository;
-import life.arch.tasks.dto.TaskRequest;
-import life.arch.tasks.dto.TaskResponse;
+import life.arch.tasks.dto.*;
+import life.arch.tasks.entity.Subtask;
 import life.arch.tasks.entity.Task;
+import life.arch.tasks.entity.TaskComment;
+import life.arch.tasks.repository.SubtaskRepository;
+import life.arch.tasks.repository.TaskCommentRepository;
 import life.arch.tasks.repository.TaskRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
-
-    public TaskService(TaskRepository taskRepository, ProjectRepository projectRepository) {
-        this.taskRepository = taskRepository;
-        this.projectRepository = projectRepository;
-    }
+    private final SubtaskRepository subtaskRepository;
+    private final TaskCommentRepository taskCommentRepository;
 
     @Transactional
     public TaskResponse createTask(TaskRequest request) {
@@ -112,5 +115,73 @@ public class TaskService {
                 null, // Group ID mapped here later
                 task.getCreatedAt()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public TaskDetailResponse getTaskDetails(UUID taskId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        Task task = taskRepository.findByIdAndUserId(taskId, currentUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+
+        List<SubtaskDto> subtasks = subtaskRepository.findByTaskIdOrderByTitleAsc(taskId)
+                .stream()
+                .map(st -> new SubtaskDto(st.getId(), st.getTitle(), st.isCompleted()))
+                .toList();
+
+        List<CommentDto> comments = taskCommentRepository.findByTaskIdOrderByCreatedAtDesc(taskId)
+                .stream()
+                .map(c -> new CommentDto(c.getId(), c.getContent(), c.getCreatedAt()))
+                .toList();
+
+        return new TaskDetailResponse(
+                task.getId(), task.getTitle(), task.getNotes(), task.getPriority(),
+                task.getDueDatetime(), task.isCompleted(), task.isStarred(),
+                subtasks, comments
+        );
+    }
+
+    @Transactional
+    public SubtaskDto addSubtask(UUID taskId, SubtaskDto request) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        Task task = taskRepository.findByIdAndUserId(taskId, currentUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+
+        Subtask subtask = new Subtask();
+        subtask.setTask(task);
+        subtask.setTitle(request.title());
+
+        Subtask saved = subtaskRepository.save(subtask);
+        return new SubtaskDto(saved.getId(), saved.getTitle(), saved.isCompleted());
+    }
+
+    @Transactional
+    public SubtaskDto toggleSubtask(UUID taskId, UUID subtaskId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        // Verify task ownership first to prevent IDOR attacks
+        if (!taskRepository.existsById(taskId) || taskRepository.findByIdAndUserId(taskId, currentUser.getId()).isEmpty()) {
+            throw new IllegalArgumentException("Task not found");
+        }
+
+        Subtask subtask = subtaskRepository.findById(subtaskId)
+                .orElseThrow(() -> new IllegalArgumentException("Subtask not found"));
+
+        subtask.setCompleted(!subtask.isCompleted());
+        Subtask saved = subtaskRepository.save(subtask);
+        return new SubtaskDto(saved.getId(), saved.getTitle(), saved.isCompleted());
+    }
+
+    @Transactional
+    public CommentDto addComment(UUID taskId, CommentDto request) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        Task task = taskRepository.findByIdAndUserId(taskId, currentUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+
+        TaskComment comment = new TaskComment();
+        comment.setTask(task);
+        comment.setUser(currentUser);
+        comment.setContent(request.content());
+
+        TaskComment saved = taskCommentRepository.save(comment);
+        return new CommentDto(saved.getId(), saved.getContent(), saved.getCreatedAt());
     }
 }
