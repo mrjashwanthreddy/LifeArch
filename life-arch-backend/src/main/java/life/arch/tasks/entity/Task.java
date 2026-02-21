@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import life.arch.auth.entity.User;
 import life.arch.common.entity.BaseEntity;
 import life.arch.projects.entity.Project;
+import lombok.Data;
 
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tasks")
+@Data
 public class Task extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
