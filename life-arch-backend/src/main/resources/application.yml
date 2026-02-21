@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: LifeArch
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/planner
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # STRICTLY validate. Let Flyway manage the schema.
+    open-in-view: false
+
+  security:
+    user:
+      password: ${SPRING_SECURITY_PASSWORD}
+
+  flyway:
+    enabled: true
+
+
+  main:
+    banner-mode: off
