@@ -6,8 +6,6 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
 import {
   useCalendarTasks,
   useCreateTask,
@@ -25,7 +23,6 @@ const taskSchema = z.object({
 type TaskFormInputs = z.infer<typeof taskSchema>;
 
 export default function CalendarView() {
-  const { email, logout } = useAuthStore();
   const calendarRef = useRef<FullCalendar>(null);
 
   // View States
@@ -120,36 +117,6 @@ export default function CalendarView() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col overflow-hidden">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm z-10 flex-shrink-0">
-        <div className="flex items-center gap-6">
-          <h1 className="text-xl font-bold text-slate-700">LifeArch Planner</h1>
-          <nav className="flex gap-4 mt-1">
-            <Link
-              to="/app"
-              className="text-slate-500 hover:text-slate-800 font-medium transition-colors"
-            >
-              List View
-            </Link>
-            <Link
-              to="/app/calendar"
-              className="text-[#85a3c2] font-semibold border-b-2 border-[#85a3c2]"
-            >
-              Calendar
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-500">{email}</span>
-          <button
-            onClick={logout}
-            className="text-sm text-slate-500 hover:text-red-500 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
       <div className="flex flex-1 overflow-hidden relative">
         {/* Main Calendar Content */}
         <main className="flex-1 p-8 overflow-y-auto">

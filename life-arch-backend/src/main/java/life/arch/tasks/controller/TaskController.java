@@ -35,6 +35,13 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
+    @PutMapping("/{id}/group/{groupId}")
+    public ResponseEntity<TaskResponse> moveTask(
+            @PathVariable UUID id,
+            @PathVariable UUID groupId) {
+        return ResponseEntity.ok(taskService.moveTask(id, groupId));
+    }
+
     @PostMapping
     public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskRequest request) {
         TaskResponse response = taskService.createTask(request);

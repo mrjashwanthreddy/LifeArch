@@ -10,8 +10,8 @@ export interface Task {
     dueDatetime?: string;
     isCompleted: boolean;
     isStarred: boolean;
-    projectId?: string;
-    createdAt: string;
+    projectId?: string; // <-- Add this
+    groupId?: string;   // <-- Add this
 }
 
 interface TaskPage {
@@ -142,5 +142,21 @@ export const useCalendarTasks = (from: string, to: string) => {
             return data;
         },
         enabled: !!from && !!to,
+    });
+};
+
+// Hook to Move a Task between Groups
+export const useMoveTask = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: async ({ taskId, groupId }: { taskId: string; groupId: string }) => {
+            const { data } = await api.put(`/tasks/${taskId}/group/${groupId}`);
+            return data;
+        },
+        onSuccess: () => {
+            // Refresh tasks to snap it into the new column
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        },
     });
 };

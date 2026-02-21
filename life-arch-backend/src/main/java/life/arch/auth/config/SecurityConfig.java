@@ -32,7 +32,7 @@ public class SecurityConfig {
                 // setting up CORS to allow requests from our frontend (configured separately in WebConfig) and any other origins we might need
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
-                    config.setAllowedOrigins(java.util.List.of("http://localhost:5173")); // Allow all origins (for development)
+                    config.setAllowedOrigins(java.util.List.of("*")); // Allow all origins (for development)
                     config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     config.setAllowedHeaders(java.util.List.of("*"));
                     return config;
@@ -44,7 +44,7 @@ public class SecurityConfig {
                 // 2. Define Endpoint Permissions
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // Open to public (Register/Login)
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll() // OpenAPI definitions
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // OpenAPI definitions
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated() // Everything else is locked down
                 )

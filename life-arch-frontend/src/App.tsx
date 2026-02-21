@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CalendarView from "./pages/CalendarView";
+import AppLayout from "./components/AppLayout";
+import ProjectView from './pages/ProjectView';
 
 // 1. Initialize the Query Client
 const queryClient = new QueryClient();
@@ -31,9 +33,12 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           <Route path="/app" element={<ProtectedRoute />}>
-            <Route index element={<Dashboard />} />
-            <Route path="calendar" element={<CalendarView />} />{" "}
-            {/* <-- ADD THIS LINE */}
+            {/* Wrap the protected routes in the AppLayout */}
+            <Route element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="calendar" element={<CalendarView />} />
+              <Route path="projects/:projectId" element={<ProjectView />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/app" replace />} />
