@@ -1,3 +1,111 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* --- FullCalendar Rich UI Overrides --- */
+.fc {
+    /* Soften the main grid borders */
+    --fc-border-color: #e2e8f0;
+
+    /* Update the default buttons to our dusty blue */
+    --fc-button-bg-color: #85a3c2;
+    --fc-button-border-color: #85a3c2;
+    --fc-button-hover-bg-color: #7291b0;
+    --fc-button-hover-border-color: #7291b0;
+    --fc-button-active-bg-color: #617f9e;
+    --fc-button-active-border-color: #617f9e;
+
+    /* Remove the harsh yellow 'today' highlight, use a very soft sage */
+    --fc-today-bg-color: #f0f7f6;
+
+    /* General text color */
+    --fc-neutral-text-color: #475569;
+}
+
+/* Make the Header Title bold and modern */
+.fc .fc-toolbar-title {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+    letter-spacing: -0.025em;
+}
+
+/* Remove the heavy outer border of the entire grid */
+.fc-theme-standard .fc-scrollgrid {
+    border: none !important;
+}
+
+/* Soften internal cell borders */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: #f1f5f9 !important;
+}
+
+/* Style the Day Headers (Sun, Mon, Tue) */
+.fc-col-header-cell {
+    padding: 12px 0 !important;
+    background-color: #f8fafc;
+}
+
+.fc-col-header-cell-cushion {
+    color: #64748b !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-decoration: none !important;
+}
+
+/* Style the Day Numbers */
+.fc-daygrid-day-number {
+    color: #94a3b8 !important;
+    font-weight: 500 !important;
+    padding: 8px 12px !important;
+    text-decoration: none !important;
+    transition: color 0.2s;
+}
+
+/* Hover effect on empty day cells to indicate they are clickable */
+.fc-daygrid-day:hover .fc-daygrid-day-number {
+    color: #85a3c2 !important;
+}
+
+.fc-daygrid-day:hover {
+    background-color: #f8fafc;
+}
+
+/* Style the Active View Button (e.g., when 'Month' is selected) using Sage Green */
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: #7aa39c !important;
+    border-color: #7aa39c !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Round the buttons properly */
+.fc-button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-transform: capitalize !important;
+    padding: 0.4rem 1rem !important;
+}
+
+.fc-button-group>.fc-button {
+    border-radius: 0 !important;
+}
+
+.fc-button-group>.fc-button:first-child {
+    border-top-left-radius: 6px !important;
+    border-bottom-left-radius: 6px !important;
+}
+
+.fc-button-group>.fc-button:last-child {
+    border-top-right-radius: 6px !important;
+    border-bottom-right-radius: 6px !important;
+}
+
+/* Add a tiny gap between events on the same day */
+.fc-daygrid-event-harness {
+    margin-bottom: 4px !important;
+}

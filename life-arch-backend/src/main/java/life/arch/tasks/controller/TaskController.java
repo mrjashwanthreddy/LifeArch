@@ -2,22 +2,38 @@ package life.arch.tasks.controller;
 
 import jakarta.validation.Valid;
 import life.arch.tasks.dto.*;
+import life.arch.tasks.service.CalendarExpansionService;
 import life.arch.tasks.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor
 public class TaskController {
+
     private final TaskService taskService;
+    private final CalendarExpansionService calendarExpansionService;
+
+    // Add this GET mapping
+    @GetMapping("/calendar")
+    public ResponseEntity<List<CalendarTaskResponse>> getCalendarTasks(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to) {
+
+        List<CalendarTaskResponse> tasks = calendarExpansionService.getExpandedCalendarTasks(from, to);
+        return ResponseEntity.ok(tasks);
+    }
 
     @PostMapping
     public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskRequest request) {

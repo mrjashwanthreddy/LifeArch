@@ -40,6 +40,10 @@ public class TaskService {
         task.setPriority(request.priority());
         task.setDueDatetime(request.dueDatetime());
 
+        task.setPriority(request.priority());
+        task.setDueDatetime(request.dueDatetime());
+        task.setRrule(request.rrule()); // <-- ADD THIS LINE
+
         // Attach project if provided
         if (request.projectId() != null) {
             Project project = projectRepository.findByIdAndUserId(request.projectId(), currentUser.getId())
@@ -69,6 +73,10 @@ public class TaskService {
         task.setNotes(request.notes());
         task.setPriority(request.priority());
         task.setDueDatetime(request.dueDatetime());
+
+        task.setPriority(request.priority());
+        task.setDueDatetime(request.dueDatetime());
+        task.setRrule(request.rrule()); // <-- ADD THIS LINE
 
         // --- Add these lines to handle the toggles ---
         if (request.isCompleted() != null) {
