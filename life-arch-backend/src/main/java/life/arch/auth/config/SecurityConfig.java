@@ -29,6 +29,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // setting up CORS to allow requests from our frontend (configured separately in WebConfig) and any other origins we might need
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowedOrigins(java.util.List.of("http://localhost:5173")); // Allow all origins (for development)
+                    config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(java.util.List.of("*"));
+                    return config;
+                }))
+
                 // 1. Disable CSRF (Cross-Site Request Forgery) because we use stateless tokens
                 .csrf(AbstractHttpConfigurer::disable)
 
