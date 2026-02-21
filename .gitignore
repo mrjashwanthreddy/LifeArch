@@ -2,3 +2,5 @@
 life-arch-backend/.env
 /life-arch-backend/.idea
 /life-arch-backend/target
+/.idea
+life-arch-frontend/README.md
