@@ -58,6 +58,7 @@ export const useLogHabit = () => {
             queryClient.invalidateQueries({ queryKey: ['habits'] });
             queryClient.invalidateQueries({ queryKey: ['points', 'total'] });
             queryClient.invalidateQueries({ queryKey: ['points', 'history'] });
+            queryClient.invalidateQueries({ queryKey: ['points', 'rank'] });
         },
     });
 };
@@ -73,6 +74,7 @@ export const useUnlogHabit = () => {
             queryClient.invalidateQueries({ queryKey: ['habits'] });
             queryClient.invalidateQueries({ queryKey: ['points', 'total'] });
             queryClient.invalidateQueries({ queryKey: ['points', 'history'] });
+            queryClient.invalidateQueries({ queryKey: ['points', 'rank'] });
         },
     });
 };
@@ -94,6 +96,26 @@ export const usePointHistory = () => {
         queryKey: ['points', 'history'],
         queryFn: async () => {
             const { data } = await api.get('/points/history');
+            return data;
+        },
+    });
+};
+
+// 7. Fetch Rank & Title
+export interface RankInfo {
+    level: number;
+    title: string;
+    emoji: string;
+    currentPoints: number;
+    nextMilestone: number;
+    progressPercent: number;
+}
+
+export const useRank = () => {
+    return useQuery<RankInfo>({
+        queryKey: ['points', 'rank'],
+        queryFn: async () => {
+            const { data } = await api.get('/points/rank');
             return data;
         },
     });

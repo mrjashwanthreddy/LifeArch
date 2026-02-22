@@ -53,20 +53,45 @@ export const useToggleTaskCompletion = () => {
 
     return useMutation({
         mutationFn: async (task: Task) => {
-            // Send the full task back with the flipped boolean
             const updatedTask = { ...task, isCompleted: !task.isCompleted };
             const { data } = await api.put(`/tasks/${task.id}`, updatedTask);
             return data;
         },
-        onSuccess: () => {
-            // Refresh tasks
+        onSuccess: (_data, task) => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
-
-            // NEW: Invalidate the points cache so the Total Score badge updates!
-            queryClient.invalidateQueries({ queryKey: ['points'] });
+            queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         },
     });
 };
+
+// 4. Hook to Update a Task (title, priority, due date)
+export const useUpdateTask = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => {
+            const { data } = await api.put(`/tasks/${taskId}`, updates);
+            return data;
+        },
+        onSuccess: (_data, { taskId }) => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+        },
+    });
+};
+
+// 5. Hook to Delete a Task
+export const useDeleteTask = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (taskId: string) => {
+            await api.delete(`/tasks/${taskId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        },
+    });
+};
+
 
 export interface Subtask { id: string; title: string; isCompleted: boolean; }
 export interface Comment { id: string; content: string; createdAt: string; }
