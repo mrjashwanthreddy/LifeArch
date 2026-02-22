@@ -2,13 +2,17 @@ import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useProjects, useCreateProject } from "../hooks/useProjects";
+import { useTotalPoints } from "../hooks/useHabits"; // <-- NEW IMPORT
 
 const PROJECT_COLORS = ["#7aa39c", "#85a3c2", "#eba49c", "#d9c5b2", "#b4a5c8"];
 
 export default function AppLayout() {
   const { email, logout } = useAuthStore();
-  const { data: projects, isLoading } = useProjects();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
   const createProject = useCreateProject();
+
+  // Fetch the user's total points!
+  const { data: pointsData } = useTotalPoints();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -86,6 +90,28 @@ export default function AppLayout() {
                 </svg>
                 Calendar
               </NavLink>
+              {/* NEW HABITS LINK */}
+              <NavLink
+                to="/app/habits"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"}`
+                }
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                Habits & Points
+              </NavLink>
             </div>
           </div>
 
@@ -116,7 +142,7 @@ export default function AppLayout() {
             </div>
 
             <div className="space-y-1">
-              {isLoading ? (
+              {projectsLoading ? (
                 <div className="px-3 text-sm text-slate-400 animate-pulse">
                   Loading...
                 </div>
@@ -145,10 +171,24 @@ export default function AppLayout() {
           </div>
         </nav>
 
-        {/* User Footer */}
-        <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center justify-between px-2">
-            <span className="text-xs text-slate-500 truncate pr-2">
+        {/* User Footer with Points Badge */}
+        <div className="p-4 border-t border-slate-200 bg-slate-50/50">
+          <div className="flex items-center justify-between px-2 mb-3">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Total Score
+            </span>
+            <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full shadow-sm flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              {pointsData?.totalPoints || 0} pts
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-200">
+            <span
+              className="text-xs text-slate-500 truncate pr-2"
+              title={email || ""}
+            >
               {email}
             </span>
             <button
@@ -163,7 +203,6 @@ export default function AppLayout() {
 
       {/* --- Main Content Area --- */}
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden relative">
-        {/* The child routes (Dashboard, Calendar, ProjectView) will render right here */}
         <Outlet />
       </main>
 

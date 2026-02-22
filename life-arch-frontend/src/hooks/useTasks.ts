@@ -59,7 +59,11 @@ export const useToggleTaskCompletion = () => {
             return data;
         },
         onSuccess: () => {
+            // Refresh tasks
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
+
+            // NEW: Invalidate the points cache so the Total Score badge updates!
+            queryClient.invalidateQueries({ queryKey: ['points'] });
         },
     });
 };
@@ -148,7 +152,7 @@ export const useCalendarTasks = (from: string, to: string) => {
 // Hook to Move a Task between Groups
 export const useMoveTask = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: async ({ taskId, groupId }: { taskId: string; groupId: string }) => {
             const { data } = await api.put(`/tasks/${taskId}/group/${groupId}`);

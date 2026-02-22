@@ -80,21 +80,18 @@ export default function Dashboard() {
                 {inboxTasks.map((task: any) => (
                   <div
                     key={task.id}
-                    onClick={() => setSelectedTaskId(task.id)}
-                    className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between hover:shadow-md hover:border-[#85a3c2] transition-all cursor-pointer group"
+                    className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between hover:shadow-md hover:border-[#85a3c2] transition-all group"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <input
                         type="checkbox"
                         checked={task.isCompleted}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleTask.mutate(task);
-                        }}
-                        className="w-5 h-5 text-[#85a3c2] rounded border-slate-300 focus:ring-[#85a3c2] cursor-pointer"
+                        onChange={() => toggleTask.mutate(task)}
+                        className="w-5 h-5 text-[#85a3c2] rounded border-slate-300 focus:ring-[#85a3c2] cursor-pointer flex-shrink-0"
                       />
                       <span
-                        className={`font-medium ${task.isCompleted ? "line-through text-slate-400" : "text-slate-700"}`}
+                        onClick={() => setSelectedTaskId(task.id)}
+                        className={`font-medium cursor-pointer hover:text-[#85a3c2] transition-colors ${task.isCompleted ? "line-through text-slate-400" : "text-slate-700"}`}
                       >
                         {task.title}
                       </span>

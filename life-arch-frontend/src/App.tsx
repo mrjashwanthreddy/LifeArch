@@ -12,9 +12,11 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CalendarView from "./pages/CalendarView";
 import AppLayout from "./components/AppLayout";
-import ProjectView from './pages/ProjectView';
+import ProjectView from "./pages/ProjectView";
 
-// 1. Initialize the Query Client
+// 1. ADD THIS IMPORT
+import HabitsView from "./pages/HabitsView";
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = () => {
@@ -23,7 +25,6 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
-// --- Main App Component ---
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -33,11 +34,13 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           <Route path="/app" element={<ProtectedRoute />}>
-            {/* Wrap the protected routes in the AppLayout */}
             <Route element={<AppLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="calendar" element={<CalendarView />} />
               <Route path="projects/:projectId" element={<ProjectView />} />
+
+              {/* 2. ADD THIS ROUTE */}
+              <Route path="habits" element={<HabitsView />} />
             </Route>
           </Route>
 
