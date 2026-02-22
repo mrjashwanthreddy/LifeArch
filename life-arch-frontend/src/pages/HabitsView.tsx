@@ -47,11 +47,11 @@ export default function HabitsView() {
     return <div className="p-8 text-slate-500 animate-pulse">Loading habits...</div>;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-      <header className="px-8 py-6 bg-white border-b border-slate-200 flex-shrink-0 flex justify-between items-center z-10">
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
+      <header className="px-8 py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 flex justify-between items-center z-10">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Daily Habits</h2>
-          <p className="text-sm text-slate-500 mt-1">Check off your routines and earn LifeArch points.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Daily Habits</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Check off your routines and earn LifeArch points.</p>
         </div>
         <button
           onClick={() => setIsAdding(!isAdding)}
@@ -70,7 +70,7 @@ export default function HabitsView() {
           <div className="lg:col-span-2 space-y-4">
             {/* Create Form */}
             {isAdding && (
-              <form onSubmit={handleCreate} className="bg-white p-5 rounded-xl border border-orange-200 shadow-sm mb-6">
+              <form onSubmit={handleCreate} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-orange-200 dark:border-orange-900/50 shadow-sm mb-6">
                 <div className="space-y-4">
                   <input
                     type="text"
@@ -111,8 +111,8 @@ export default function HabitsView() {
             )}
 
             {habits?.length === 0 && !isAdding && (
-              <div className="text-center p-12 bg-white border border-slate-200 rounded-xl border-dashed">
-                <p className="text-slate-500">You haven't set up any habits yet.</p>
+              <div className="text-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl border-dashed">
+                <p className="text-slate-500 dark:text-slate-400">You haven't set up any habits yet.</p>
               </div>
             )}
 
@@ -128,14 +128,14 @@ export default function HabitsView() {
                     key={habit.id}
                     className={`p-5 rounded-xl border transition-all ${
                       isCompletedToday
-                        ? "bg-orange-50/50 border-orange-200 shadow-sm"
-                        : "bg-white border-slate-200 hover:border-orange-200 hover:shadow-md"
+                        ? "bg-orange-50/50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-900/50 shadow-sm"
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-orange-200 hover:shadow-md"
                     }`}
                   >
                     {/* Header row */}
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-semibold truncate ${isCompletedToday ? "text-orange-800 line-through decoration-orange-300" : "text-slate-800"}`}>
+                        <h3 className={`font-semibold truncate ${isCompletedToday ? "text-orange-800 dark:text-orange-300 line-through decoration-orange-300" : "text-slate-800 dark:text-slate-100"}`}>
                           {habit.name}
                         </h3>
                         {habit.description && (
@@ -199,7 +199,7 @@ export default function HabitsView() {
 
           {/* Ledger History Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-[600px]">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-[600px]">
               <div className="p-4 border-b border-slate-200 bg-slate-50">
                 <h3 className="font-semibold text-slate-700 text-sm">Point Ledger</h3>
               </div>

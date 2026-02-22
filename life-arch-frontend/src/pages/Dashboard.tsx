@@ -78,13 +78,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full relative bg-slate-50 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full relative bg-slate-50 dark:bg-slate-950 overflow-hidden">
       <div className="flex flex-1 overflow-hidden relative">
         {/* Main List Area */}
         <main className="flex-1 p-8 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800">To Do</h2>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">To Do</h2>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-[#7aa39c] hover:bg-[#688f88] text-white px-5 py-2.5 rounded-lg font-medium shadow-sm transition-colors text-sm"
@@ -96,9 +96,9 @@ export default function Dashboard() {
             {isLoading ? (
               <div className="text-center py-12 text-slate-500 animate-pulse">Loading tasks...</div>
             ) : inboxTasks.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-300">
-                <p className="text-slate-500 mb-2">Your inbox is clear!</p>
-                <p className="text-sm text-slate-400">Tasks created without a project will show up here.</p>
+              <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                <p className="text-slate-500 dark:text-slate-400 mb-2">Your inbox is clear!</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">Tasks created without a project will show up here.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -107,8 +107,8 @@ export default function Dashboard() {
                   return (
                     <div
                       key={task.id}
-                      className={`bg-white px-4 py-3 rounded-xl border flex items-center gap-3 hover:shadow-md transition-all group ${
-                        selectedTaskId === task.id ? "border-[#85a3c2] shadow-sm" : "border-slate-200"
+                      className={`bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border flex items-center gap-3 hover:shadow-md transition-all group ${
+                        selectedTaskId === task.id ? "border-[#85a3c2] shadow-sm" : "border-slate-200 dark:border-slate-800"
                       }`}
                     >
                       <input
@@ -120,7 +120,7 @@ export default function Dashboard() {
                       <span
                         onClick={() => setSelectedTaskId(task.id === selectedTaskId ? null : task.id)}
                         className={`flex-1 text-sm font-medium cursor-pointer hover:text-[#85a3c2] transition-colors ${
-                          task.isCompleted ? "line-through text-slate-400" : "text-slate-700"
+                          task.isCompleted ? "line-through text-slate-400" : "text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         {task.title}
@@ -150,7 +150,7 @@ export default function Dashboard() {
 
         {/* Sliding Task Detail Drawer */}
         <div
-          className={`absolute inset-y-0 right-0 w-full md:w-[420px] bg-white shadow-2xl border-l border-slate-200 z-40 transform transition-transform duration-300 ease-in-out ${
+          className={`absolute inset-y-0 right-0 w-full md:w-[420px] bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 z-40 transform transition-transform duration-300 ease-in-out ${
             selectedTaskId ? "translate-x-0" : "translate-x-full"
           }`}
         >
@@ -167,15 +167,15 @@ export default function Dashboard() {
       {/* Create Task Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-800/30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md border border-slate-100">
-            <h3 className="text-lg font-bold mb-4 text-slate-800">Add to Inbox</h3>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl w-full max-w-md border border-slate-100 dark:border-slate-700">
+            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Add to Inbox</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <input
                   {...register("title")}
                   type="text"
                   placeholder="What needs to be done?"
-                  className="w-full p-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#85a3c2] outline-none transition-all"
+                  className="w-full p-3 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-[#85a3c2] outline-none transition-all"
                   autoFocus
                 />
                 {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
@@ -183,7 +183,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <select
                   {...register("priority")}
-                  className="w-full p-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#85a3c2] outline-none text-slate-600 bg-white"
+                  className="w-full p-3 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#85a3c2] outline-none text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800"
                 >
                   <option value="">No Priority</option>
                   <option value="P1">P1 — High</option>
