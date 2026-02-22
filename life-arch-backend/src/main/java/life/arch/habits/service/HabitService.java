@@ -125,10 +125,21 @@ public class HabitService {
         }
     }
 
-    // Helper mapper — checks today's HabitLog for accurate isCompletedToday status
+    // Helper mapper — checks today's HabitLog for accurate isCompletedToday and
+    // streaks
     private HabitResponse mapToResponse(Habit habit) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
         boolean isCompletedToday = habitLogRepository.existsByHabitIdAndCompletedDate(habit.getId(), today);
+
+        // Fetch all log dates sorted newest-first for streak calculation
+        List<LocalDate> logDates = habitLogRepository
+                .findByHabitIdOrderByCompletedDateDesc(habit.getId())
+                .stream()
+                .map(log -> log.getCompletedDate())
+                .toList();
+
+        int[] streaks = calculateStreaks(logDates, today);
+
         return new HabitResponse(
                 habit.getId(),
                 habit.getName(),
@@ -137,6 +148,53 @@ public class HabitService {
                 habit.getPointsReward(),
                 habit.isArchived(),
                 habit.getCreatedAt(),
-                isCompletedToday);
+                isCompletedToday,
+                streaks[0], // currentStreak
+                streaks[1]); // longestStreak
+    }
+
+    /**
+     * Calculates current and longest streaks from a list of dates (newest-first).
+     * Current streak: consecutive days ending on today or yesterday.
+     * Longest streak: the maximum consecutive-day window across all history.
+     */
+    private int[] calculateStreaks(List<LocalDate> dates, LocalDate today) {
+        if (dates.isEmpty())
+            return new int[] { 0, 0 };
+
+        // --- Current streak ---
+        int current = 0;
+        LocalDate expected = today;
+
+        // If the habit wasn't done today, still allow it to count from yesterday
+        if (!dates.contains(today)) {
+            expected = today.minusDays(1);
+        }
+
+        for (LocalDate date : dates) {
+            if (date.equals(expected)) {
+                current++;
+                expected = expected.minusDays(1);
+            } else if (date.isBefore(expected)) {
+                break;
+            }
+        }
+
+        // --- Longest streak ---
+        int longest = 0;
+        int run = 1;
+        for (int i = 1; i < dates.size(); i++) {
+            LocalDate prev = dates.get(i - 1);
+            LocalDate curr = dates.get(i);
+            if (prev.minusDays(1).equals(curr)) {
+                run++;
+            } else {
+                longest = Math.max(longest, run);
+                run = 1;
+            }
+        }
+        longest = Math.max(longest, run);
+
+        return new int[] { current, longest };
     }
 }

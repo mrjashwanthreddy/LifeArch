@@ -11,6 +11,8 @@ export interface Habit {
     isArchived: boolean;
     createdAt: string;
     isCompletedToday: boolean;
+    currentStreak: number;
+    longestStreak: number;
 }
 
 export interface PointTransaction {
