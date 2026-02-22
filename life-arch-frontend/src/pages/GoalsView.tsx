@@ -52,9 +52,9 @@ export default function GoalsView() {
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* Header */}
-      <header className="px-8 py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 flex justify-between items-center">
+      <header className="px-4 sm:px-8 py-4 sm:py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Goals</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Goals</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Track your long-term ambitions and milestones.</p>
         </div>
         <button
@@ -68,7 +68,7 @@ export default function GoalsView() {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8">
         <div className="max-w-3xl mx-auto space-y-8">
           {/* Create Form */}
           {isAdding && (

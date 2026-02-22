@@ -65,7 +65,7 @@ function buildHabitHeatmap(
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 text-xs">
         <p className="font-semibold text-slate-700 mb-1">{label}</p>
         <p className="text-amber-600">+{payload[0]?.value ?? 0} pts today</p>
         <p className="text-slate-500">Total: {payload[1]?.value ?? 0} pts</p>
@@ -87,16 +87,16 @@ export default function AnalyticsView() {
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* Header */}
-      <header className="px-8 py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Analytics</h2>
+      <header className="px-4 sm:px-8 py-4 sm:py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Analytics</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your progress, visualised over the last 30 days.</p>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-5xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+        <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard label="Total Pts Earned" value={`+${totalEarned}`} color="text-amber-600" bg="bg-amber-50" border="border-amber-100" />
             <StatCard label="Active Days" value={activeDays} color="text-[#85a3c2]" bg="bg-blue-50" border="border-blue-100" />
             <StatCard label="Habits Tracked" value={habits.length} color="text-orange-600" bg="bg-orange-50" border="border-orange-100" />
@@ -193,8 +193,9 @@ export default function AnalyticsView() {
                         </div>
                         <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{doneCount}/30 days ({pct}%)</span>
                       </div>
-                      {/* Heatmap grid — 5 rows of 6 */}
-                      <div className="flex flex-wrap gap-1.5">
+                      {/* Heatmap grid — scrollable on narrow screens */}
+                      <div className="overflow-x-auto pb-1">
+                        <div className="flex flex-wrap gap-1.5 min-w-[220px]">
                         {cells.map((cell) => (
                           <div
                             key={cell.key}
@@ -206,6 +207,7 @@ export default function AnalyticsView() {
                             }`}
                           />
                         ))}
+                        </div>
                       </div>
                       {/* Compact progress bar */}
                       <div className="mt-2 h-1 bg-slate-100 rounded-full overflow-hidden">
