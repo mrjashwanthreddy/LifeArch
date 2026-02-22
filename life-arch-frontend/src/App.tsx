@@ -16,6 +16,8 @@ import ProjectView from "./pages/ProjectView";
 
 // 1. ADD THIS IMPORT
 import HabitsView from "./pages/HabitsView";
+import GoalsView from "./pages/GoalsView";
+import AnalyticsView from "./pages/AnalyticsView";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,8 @@ function App() {
 
               {/* 2. ADD THIS ROUTE */}
               <Route path="habits" element={<HabitsView />} />
+              <Route path="goals" element={<GoalsView />} />
+              <Route path="analytics" element={<AnalyticsView />} />
             </Route>
           </Route>
 
