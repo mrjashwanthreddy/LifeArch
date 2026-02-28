@@ -16,19 +16,21 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 1. Enforce user ownership on standard fetch
     Optional<Task> findByIdAndUserId(UUID id, UUID userId);
 
-    // 2. Fetch all tasks for a user with optional filters (completed status, project)
+    // 2. Fetch all tasks for a user with optional filters (completed status,
+    // project, inbox)
     @Query("""
                 SELECT t FROM Task t
                 WHERE t.user.id = :userId
                 AND (:isCompleted IS NULL OR t.isCompleted = :isCompleted)
+                AND (:isInbox IS NULL OR (:isInbox = true AND t.project IS NULL))
                 AND (:projectId IS NULL OR t.project.id = :projectId)
             """)
     Page<Task> findTasksWithFilters(
             @Param("userId") UUID userId,
             @Param("isCompleted") Boolean isCompleted,
             @Param("projectId") UUID projectId,
-            Pageable pageable
-    );
+            @Param("isInbox") Boolean isInbox,
+            Pageable pageable);
 
     // 3. Optimized delete (prevents fetching the entity just to delete it)
     void deleteByIdAndUserId(UUID id, UUID userId);
@@ -46,6 +48,5 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findTasksForCalendarWindow(
             @Param("userId") UUID userId,
             @Param("start") java.time.OffsetDateTime start,
-            @Param("end") java.time.OffsetDateTime end
-    );
+            @Param("end") java.time.OffsetDateTime end);
 }

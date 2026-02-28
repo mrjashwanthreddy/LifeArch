@@ -125,6 +125,21 @@ public class HabitService {
         }
     }
 
+    // 5. Archive a Habit
+    @Transactional
+    public void archiveHabit(UUID habitId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        Habit habit = habitRepository.findById(habitId)
+                .orElseThrow(() -> new IllegalArgumentException("Habit not found"));
+
+        if (!habit.getUser().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("Access denied to this habit");
+        }
+
+        habit.setArchived(true);
+        habitRepository.save(habit);
+    }
+
     // Helper mapper — checks today's HabitLog for accurate isCompletedToday and
     // streaks
     private HabitResponse mapToResponse(Habit habit) {
@@ -140,6 +155,12 @@ public class HabitService {
 
         int[] streaks = calculateStreaks(logDates, today);
 
+        // Last 7 days status (from oldest to today)
+        java.util.List<Boolean> last7Days = new java.util.ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            last7Days.add(logDates.contains(today.minusDays(i)));
+        }
+
         return new HabitResponse(
                 habit.getId(),
                 habit.getName(),
@@ -150,7 +171,8 @@ public class HabitService {
                 habit.getCreatedAt(),
                 isCompletedToday,
                 streaks[0], // currentStreak
-                streaks[1]); // longestStreak
+                streaks[1], // longestStreak
+                last7Days); // last7Days
     }
 
     /**

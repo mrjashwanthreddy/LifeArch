@@ -13,6 +13,8 @@ import {
   useAddSubtask,
   useToggleSubtask,
   useAddComment,
+  useToggleTaskCompletion,
+  useUpdateTask,
 } from "../hooks/useTasks";
 
 // --- Form Validation Schema ---
@@ -53,6 +55,8 @@ export default function CalendarView() {
     dateRange.to,
   );
   const createTask = useCreateTask();
+  const toggleTask = useToggleTaskCompletion();
+  const updateTask = useUpdateTask();
 
   // Form Setup
   const {
@@ -98,6 +102,26 @@ export default function CalendarView() {
     setSelectedTaskId(arg.event.extendedProps.originalTaskId);
   };
 
+  const handleEventDrop = (info: any) => {
+    if (info.event.extendedProps.isRecurring) {
+      alert("Recurring tasks cannot be dragged to reschedule.");
+      info.revert();
+      return;
+    }
+    
+    if (info.event.start) {
+      updateTask.mutate(
+        {
+          taskId: info.event.extendedProps.originalTaskId,
+          updates: { dueDatetime: info.event.start.toISOString() }
+        },
+        {
+          onError: () => info.revert()
+        }
+      );
+    }
+  };
+
   const onSubmit = (data: TaskFormInputs) => {
     // Merge the form data with the explicitly clicked date
     createTask.mutate(
@@ -140,8 +164,57 @@ export default function CalendarView() {
               datesSet={handleDatesSet}
               dateClick={handleDateClick}
               eventClick={handleEventClick}
+              eventDrop={handleEventDrop}
+              editable={true}
               height="100%"
-              eventContent={renderEventContent}
+              eventContent={(eventInfo) => {
+                const { isCompleted, isRecurring, originalTaskId } = eventInfo.event.extendedProps;
+              
+                return (
+                  <div
+                    className={`px-2 py-1.5 rounded-md shadow-sm overflow-hidden flex items-center gap-1.5 w-full transition-all duration-200
+                      ${
+                        isCompleted
+                          ? "bg-slate-100 text-slate-500 opacity-70 border border-slate-200"
+                          : "bg-[#85a3c2] text-white border border-[#7291b0] hover:shadow-md hover:-translate-y-[1px]"
+                      }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isCompleted}
+                      onChange={() => {
+                        // Prevent opening the drawer
+                        toggleTask.mutate(originalTaskId);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`w-3.5 h-3.5 rounded-sm flex-shrink-0 cursor-pointer ${
+                        isCompleted 
+                          ? "accent-slate-400" 
+                          : "accent-white mix-blend-screen"
+                      }`}
+                      title={isCompleted ? "Mark incomplete" : "Mark complete"}
+                    />
+                    {isRecurring && (
+                      <svg
+                        className="w-3.5 h-3.5 flex-shrink-0 opacity-80"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2.5"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    )}
+                    <span className={`text-xs truncate font-medium tracking-wide ${isCompleted ? "line-through" : ""}`}>
+                      {eventInfo.event.title}
+                    </span>
+                  </div>
+                );
+              }}
               eventClassNames="cursor-pointer hover:opacity-80 transition-opacity"
             />
           </div>
@@ -234,41 +307,6 @@ export default function CalendarView() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// Custom renderer for FullCalendar items
-function renderEventContent(eventInfo: any) {
-  const { isCompleted, isRecurring } = eventInfo.event.extendedProps;
-
-  return (
-    <div
-      className={`px-2 py-1.5 rounded-md shadow-sm overflow-hidden flex items-center gap-1.5 w-full transition-all duration-200
-        ${
-          isCompleted
-            ? "bg-slate-100 text-slate-500 line-through opacity-70 border border-slate-200"
-            : "bg-[#85a3c2] text-white border border-[#7291b0] hover:shadow-md hover:-translate-y-[1px]"
-        }`}
-    >
-      {isRecurring && (
-        <svg
-          className="w-3.5 h-3.5 flex-shrink-0 opacity-80"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2.5"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-      )}
-      <span className="text-xs truncate font-medium tracking-wide">
-        {eventInfo.event.title}
-      </span>
     </div>
   );
 }

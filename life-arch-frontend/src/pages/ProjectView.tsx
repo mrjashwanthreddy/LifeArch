@@ -6,8 +6,14 @@ import {
   useProjects,
   useProjectGroups,
   useCreateTaskGroup,
+  useUpdateProject,
+  useDeleteProject,
+  useUpdateTaskGroup,
+  useDeleteTaskGroup,
 } from "../hooks/useProjects";
 import { useTasks, useCreateTask, useMoveTask } from "../hooks/useTasks";
+import type { Task } from "../hooks/useTasks";
+import { useNavigate } from "react-router-dom";
 
 // Helper to assign pastel colors based on column name
 const getColumnTheme = (name: string) => {
@@ -59,16 +65,21 @@ const getColumnTheme = (name: string) => {
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
 
   // Fetch Data
   const { data: projects } = useProjects();
   const { data: groups, isLoading: groupsLoading } = useProjectGroups(
     projectId || "",
   );
-  const { data: allTasks, isLoading: tasksLoading } = useTasks();
+  const { data: taskPage, isLoading: tasksLoading } = useTasks({ projectId, size: 500 });
 
   // Mutations
   const createGroup = useCreateTaskGroup(projectId || "");
+  const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
+  const updateGroup = useUpdateTaskGroup(projectId || "");
+  const deleteGroup = useDeleteTaskGroup(projectId || "");
   const createTask = useCreateTask();
   const moveTask = useMoveTask();
 
@@ -78,8 +89,14 @@ export default function ProjectView() {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
 
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState("");
+  
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState("");
+
   // Local state for optimistic drag-and-drop updates
-  const [localTasks, setLocalTasks] = useState<any[]>([]);
+  const [localTasks, setLocalTasks] = useState<Task[]>([]);
 
   // Find the current project
   const project = Array.isArray(projects)
@@ -88,14 +105,9 @@ export default function ProjectView() {
 
   // Sync server tasks with local state whenever they load
   useEffect(() => {
-    const taskList = Array.isArray(allTasks)
-      ? allTasks
-      : allTasks?.content || [];
-    const filteredTasks = taskList.filter(
-      (task: any) => task.projectId === projectId,
-    );
-    setLocalTasks(filteredTasks);
-  }, [allTasks, projectId]);
+    const taskList = taskPage?.content || [];
+    setLocalTasks(taskList);
+  }, [taskPage, projectId]);
 
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,14 +171,59 @@ export default function ProjectView() {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Project Header */}
-      <header className="px-8 py-6 bg-white border-b border-slate-200 flex-shrink-0 flex items-center gap-3 z-10">
-        <span
-          className="w-4 h-4 rounded-full shadow-sm"
-          style={{ backgroundColor: project.colorHex }}
-        ></span>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-          {project.name}
-        </h2>
+      <header className="px-8 py-6 bg-white border-b border-slate-200 flex-shrink-0 flex items-center justify-between z-10 group/header">
+        <div className="flex items-center gap-3">
+          <span
+            className="w-4 h-4 rounded-full shadow-sm"
+            style={{ backgroundColor: project.colorHex }}
+          ></span>
+          
+          {editingProjectId === project.id ? (
+            <input
+              autoFocus
+              className="text-2xl font-bold text-slate-800 tracking-tight border-b-2 border-slate-400 outline-none w-64 bg-transparent"
+              value={editingProjectName}
+              onChange={(e) => setEditingProjectName(e.target.value)}
+              onBlur={() => {
+                if (editingProjectName.trim() && editingProjectName !== project.name) {
+                  updateProject.mutate({ projectId: project.id, updates: { name: editingProjectName } });
+                }
+                setEditingProjectId(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") setEditingProjectId(null);
+              }}
+            />
+          ) : (
+            <h2 
+              className="text-2xl font-bold text-slate-800 tracking-tight cursor-pointer hover:bg-slate-50 px-2 py-1 -ml-2 rounded"
+              onClick={() => {
+                setEditingProjectName(project.name);
+                setEditingProjectId(project.id);
+              }}
+            >
+              {project.name}
+            </h2>
+          )}
+        </div>
+        
+        {/* Delete Project Button */}
+        <button
+          onClick={() => {
+            if (window.confirm(`Are you sure you want to delete "${project.name}"? This cannot be undone.`)) {
+              deleteProject.mutate(project.id, {
+                onSuccess: () => navigate("/")
+              });
+            }
+          }}
+          className="opacity-0 group-hover/header:opacity-100 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+          title="Delete Project"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
       </header>
 
       {/* Kanban Board Area */}
@@ -176,7 +233,7 @@ export default function ProjectView() {
             {/* Render Columns (Task Groups) */}
             {groups?.map((group) => {
               const groupTasks = localTasks.filter(
-                (task: any) => task.groupId === group.id,
+                (task) => task.groupId === group.id,
               );
               const theme = getColumnTheme(group.name); // <-- Get colors dynamically!
 
@@ -186,15 +243,57 @@ export default function ProjectView() {
                   className={`w-80 flex-shrink-0 flex flex-col max-h-full rounded-xl border-x border-b border-t-4 shadow-sm ${theme.border} ${theme.topBar} ${theme.bg}`}
                 >
                   <div
-                    className={`p-3 border-b flex justify-between items-center rounded-t-lg cursor-grab active:cursor-grabbing ${theme.headerBg} ${theme.border}`}
+                    className={`p-3 border-b flex justify-between items-center rounded-t-lg cursor-grab active:cursor-grabbing group/col ${theme.headerBg} ${theme.border}`}
                   >
-                    <h3
-                      className={`font-semibold text-sm tracking-wide ${theme.text}`}
-                    >
-                      {group.name}
-                    </h3>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                       {editingGroupId === group.id ? (
+                        <input
+                          autoFocus
+                          className={`font-semibold text-sm tracking-wide bg-white border border-slate-300 rounded px-1 min-w-0 w-28 outline-none focus:border-slate-400 ${theme.text}`}
+                          value={editingGroupName}
+                          onChange={(e) => setEditingGroupName(e.target.value)}
+                          onBlur={() => {
+                            if (editingGroupName.trim() && editingGroupName !== group.name) {
+                              updateGroup.mutate({ groupId: group.id, name: editingGroupName });
+                            }
+                            setEditingGroupId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (e.key === "Escape") setEditingGroupId(null);
+                          }}
+                        />
+                      ) : (
+                        <h3
+                          className={`font-semibold text-sm tracking-wide truncate cursor-pointer hover:underline ${theme.text}`}
+                          onClick={() => {
+                            setEditingGroupName(group.name);
+                            setEditingGroupId(group.id);
+                          }}
+                          title="Click to rename"
+                        >
+                          {group.name}
+                        </h3>
+                      )}
+                      
+                      {/* Delete Column button */}
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete section "${group.name}"? Tasks inside will become unassigned.`)) {
+                            deleteGroup.mutate(group.id);
+                          }
+                        }}
+                        className={`opacity-0 group-hover/col:opacity-100 p-1 rounded hover:bg-black/10 transition-opacity flex-shrink-0 ${theme.text}`}
+                        title="Delete Section"
+                      >
+                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                         </svg>
+                      </button>
+                    </div>
+
                     <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm ${theme.badgeBg} ${theme.badgeText}`}
+                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm ml-2 ${theme.badgeBg} ${theme.badgeText}`}
                     >
                       {groupTasks.length}
                     </span>
@@ -209,7 +308,7 @@ export default function ProjectView() {
                         className={`flex-1 overflow-y-auto p-3 transition-colors ${snapshot.isDraggingOver ? "bg-black/5 rounded-b-xl" : ""}`}
                       >
                         <div className="space-y-3">
-                          {groupTasks.map((task: any, index: number) => (
+                          {groupTasks.map((task, index: number) => (
                             <Draggable
                               key={task.id}
                               draggableId={task.id}

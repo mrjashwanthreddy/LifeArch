@@ -29,7 +29,11 @@ const PRIORITY_STYLES: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { data: allTasks, isLoading } = useTasks();
+  const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED">("ALL");
+  const isCompleted = filter === "ALL" ? undefined : filter === "COMPLETED";
+
+  const { data: taskPage, isLoading } = useTasks({ isInbox: true, page, size: 20, isCompleted });
   const createTask = useCreateTask();
   const toggleTask = useToggleTaskCompletion();
 
@@ -45,8 +49,8 @@ export default function Dashboard() {
     resolver: zodResolver(taskSchema),
   });
 
-  const taskList = Array.isArray(allTasks) ? allTasks : allTasks?.content || [];
-  const inboxTasks = taskList.filter((task: any) => !task.projectId);
+  const inboxTasks = taskPage?.content || [];
+  const totalPages = taskPage?.totalPages || 1;
 
   const onSubmit = (data: TaskFormInputs) => {
     createTask.mutate(
@@ -84,7 +88,24 @@ export default function Dashboard() {
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">To Do</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">Inbox</h2>
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                  {(["ALL", "ACTIVE", "COMPLETED"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => { setFilter(f); setPage(0); }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                        filter === f
+                          ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      {f.charAt(0) + f.slice(1).toLowerCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-[#7aa39c] hover:bg-[#688f88] text-white px-5 py-2.5 rounded-lg font-medium shadow-sm transition-colors text-sm"
@@ -143,6 +164,29 @@ export default function Dashboard() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <button 
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-slate-500">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button 
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="px-3 py-1 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md disabled:opacity-50"
+                >
+                  Next
+                </button>
               </div>
             )}
           </div>

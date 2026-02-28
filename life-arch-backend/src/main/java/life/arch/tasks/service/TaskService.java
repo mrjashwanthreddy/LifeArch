@@ -70,9 +70,10 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskResponse> getTasks(Boolean isCompleted, UUID projectId, Pageable pageable) {
+    public Page<TaskResponse> getTasks(Boolean isCompleted, UUID projectId, Boolean isInbox, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        Page<Task> tasks = taskRepository.findTasksWithFilters(currentUser.getId(), isCompleted, projectId, pageable);
+        Page<Task> tasks = taskRepository.findTasksWithFilters(currentUser.getId(), isCompleted, projectId, isInbox,
+                pageable);
         return tasks.map(this::mapToResponse);
     }
 
@@ -87,10 +88,7 @@ public class TaskService {
         task.setNotes(request.notes());
         task.setPriority(request.priority());
         task.setDueDatetime(request.dueDatetime());
-
-        task.setPriority(request.priority());
-        task.setDueDatetime(request.dueDatetime());
-        task.setRrule(request.rrule()); // <-- ADD THIS LINE
+        task.setRrule(request.rrule());
 
         // --- Add these lines to handle the toggles ---
         if (request.isCompleted() != null) {
@@ -116,7 +114,8 @@ public class TaskService {
     @Transactional
     public void deleteTask(UUID taskId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        // Check if exists first to throw proper 404/error if needed, or just attempt delete
+        // Check if exists first to throw proper 404/error if needed, or just attempt
+        // delete
         if (!taskRepository.existsById(taskId)) {
             throw new IllegalArgumentException("Task not found");
         }
@@ -135,8 +134,7 @@ public class TaskService {
                 task.isStarred(),
                 task.getProject() != null ? task.getProject().getId() : null,
                 task.getTaskGroup() != null ? task.getTaskGroup().getId() : null, // Group ID mapped here later
-                task.getCreatedAt()
-        );
+                task.getCreatedAt());
     }
 
     @Transactional(readOnly = true)
@@ -158,8 +156,7 @@ public class TaskService {
         return new TaskDetailResponse(
                 task.getId(), task.getTitle(), task.getNotes(), task.getPriority(),
                 task.getDueDatetime(), task.isCompleted(), task.isStarred(),
-                subtasks, comments
-        );
+                subtasks, comments);
     }
 
     @Transactional
@@ -180,7 +177,8 @@ public class TaskService {
     public SubtaskDto toggleSubtask(UUID taskId, UUID subtaskId) {
         User currentUser = SecurityUtils.getCurrentUser();
         // Verify task ownership first to prevent IDOR attacks
-        if (!taskRepository.existsById(taskId) || taskRepository.findByIdAndUserId(taskId, currentUser.getId()).isEmpty()) {
+        if (!taskRepository.existsById(taskId)
+                || taskRepository.findByIdAndUserId(taskId, currentUser.getId()).isEmpty()) {
             throw new IllegalArgumentException("Task not found");
         }
 

@@ -238,12 +238,13 @@ export default function AppLayout() {
             <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           )}
           <div className="flex items-center justify-between px-1">
-            <span
-              className="text-xs text-slate-500 dark:text-slate-400 truncate pr-2"
-              title={email || ""}
+            <NavLink
+              to="/app/profile"
+              className={({ isActive }) => `text-xs font-medium truncate pr-2 transition-colors ${isActive ? 'text-[#85a3c2]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              title="View Profile"
             >
               {email}
-            </span>
+            </NavLink>
             <button
               onClick={logout}
               className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"

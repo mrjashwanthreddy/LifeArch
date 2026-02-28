@@ -21,11 +21,26 @@ interface TaskPage {
 }
 
 // 1. Hook to Fetch Tasks
-export const useTasks = (page = 0, size = 20) => {
+export interface TaskQueryParams {
+    page?: number;
+    size?: number;
+    projectId?: string;
+    isInbox?: boolean;
+    isCompleted?: boolean;
+}
+
+export const useTasks = (params: TaskQueryParams = { page: 0, size: 20 }) => {
     return useQuery<TaskPage>({
-        queryKey: ['tasks', page, size],
+        queryKey: ['tasks', params],
         queryFn: async () => {
-            const { data } = await api.get(`/tasks?page=${page}&size=${size}`);
+            const queryParams = new URLSearchParams();
+            if (params.page !== undefined) queryParams.append('page', params.page.toString());
+            if (params.size !== undefined) queryParams.append('size', params.size.toString());
+            if (params.projectId) queryParams.append('projectId', params.projectId);
+            if (params.isInbox !== undefined) queryParams.append('isInbox', params.isInbox.toString());
+            if (params.isCompleted !== undefined) queryParams.append('isCompleted', params.isCompleted.toString());
+            
+            const { data } = await api.get(`/tasks?${queryParams.toString()}`);
             return data;
         },
     });
