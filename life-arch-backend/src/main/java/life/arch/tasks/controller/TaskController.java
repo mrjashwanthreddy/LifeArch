@@ -52,9 +52,12 @@ public class TaskController {
     public ResponseEntity<Page<TaskResponse>> getTasks(
             @RequestParam(required = false) Boolean isCompleted,
             @RequestParam(required = false) UUID projectId,
+            @RequestParam(required = false) Boolean isInbox,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Boolean isStarred,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
 
-        Page<TaskResponse> tasks = taskService.getTasks(isCompleted, projectId, pageable);
+        Page<TaskResponse> tasks = taskService.getTasks(isCompleted, projectId, isInbox, priority, isStarred, pageable);
         return ResponseEntity.ok(tasks);
     }
 

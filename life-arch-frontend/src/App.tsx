@@ -18,12 +18,28 @@ import ProjectView from "./pages/ProjectView";
 import HabitsView from "./pages/HabitsView";
 import GoalsView from "./pages/GoalsView";
 import AnalyticsView from "./pages/AnalyticsView";
+import ProfileView from "./pages/ProfileView";
 
 const queryClient = new QueryClient();
 
+const isTokenExpired = (token: string) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    // Buffer of 10 seconds
+    return payload.exp && payload.exp * 1000 < Date.now() - 10000;
+  } catch {
+    return true;
+  }
+};
+
 const ProtectedRoute = () => {
   const token = useAuthStore((state) => state.token);
-  if (!token) return <Navigate to="/login" replace />;
+  const logout = useAuthStore((state) => state.logout);
+
+  if (!token || isTokenExpired(token)) {
+    if (token) logout();
+    return <Navigate to="/login" replace />;
+  }
   return <Outlet />;
 };
 
@@ -45,6 +61,7 @@ function App() {
               <Route path="habits" element={<HabitsView />} />
               <Route path="goals" element={<GoalsView />} />
               <Route path="analytics" element={<AnalyticsView />} />
+              <Route path="profile" element={<ProfileView />} />
             </Route>
           </Route>
 

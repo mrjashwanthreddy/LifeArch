@@ -36,6 +36,9 @@ public class TaskGroup {
     @Column(name = "sort_order")
     private int sortOrder = 0;
 
+    @Column(name = "wip_limit")
+    private Integer wipLimit;
+
     @PrePersist
     protected void onCreate() {
         if (this.id == null) {

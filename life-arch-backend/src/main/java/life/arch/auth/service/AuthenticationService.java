@@ -33,6 +33,7 @@ public class AuthenticationService {
         // 2. Create and save new user
         User user = new User();
         user.setEmail(request.email());
+        user.setFullName(request.fullName());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         userRepository.save(user);
 
@@ -40,7 +41,7 @@ public class AuthenticationService {
         SecurityUser securityUser = new SecurityUser(user);
         String jwtToken = jwtService.generateToken(securityUser);
 
-        return new AuthResponse(jwtToken, user.getEmail());
+        return new AuthResponse(jwtToken, user.getEmail(), user.getFullName());
     }
 
     public AuthResponse authenticate(LoginRequest request) {
@@ -48,9 +49,7 @@ public class AuthenticationService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.email(),
-                        request.password()
-                )
-        );
+                        request.password()));
 
         // 2. If we reach here, credentials are valid. Fetch user and generate token.
         User user = userRepository.findByEmail(request.email())
@@ -59,7 +58,7 @@ public class AuthenticationService {
         SecurityUser securityUser = new SecurityUser(user);
         String jwtToken = jwtService.generateToken(securityUser);
 
-        return new AuthResponse(jwtToken, user.getEmail());
+        return new AuthResponse(jwtToken, user.getEmail(), user.getFullName());
     }
 
 }

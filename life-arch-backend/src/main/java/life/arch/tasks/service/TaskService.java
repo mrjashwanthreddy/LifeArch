@@ -11,14 +11,18 @@ import life.arch.tasks.entity.Subtask;
 import life.arch.tasks.entity.Task;
 import life.arch.tasks.entity.TaskComment;
 import life.arch.tasks.repository.SubtaskRepository;
+import life.arch.tasks.repository.TagRepository;
 import life.arch.tasks.repository.TaskCommentRepository;
 import life.arch.tasks.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import net.fortuna.ical4j.model.DateTime;
+import net.fortuna.ical4j.model.Recur;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +35,7 @@ public class TaskService {
     private final ProjectRepository projectRepository;
     private final SubtaskRepository subtaskRepository;
     private final TaskCommentRepository taskCommentRepository;
+    private final TagRepository tagRepository;
 
     @Transactional
     public TaskResponse createTask(TaskRequest request) {
@@ -65,14 +70,22 @@ public class TaskService {
             task.setTaskGroup(group);
         }
 
+        // Process Tags
+        updateTasksTags(currentUser, task, request.tags());
+
+        // Process Dependencies
+        updateTaskDependencies(currentUser, task, request.blockedByIds());
+
         Task savedTask = taskRepository.save(task);
         return mapToResponse(savedTask);
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskResponse> getTasks(Boolean isCompleted, UUID projectId, Pageable pageable) {
+    public Page<TaskResponse> getTasks(Boolean isCompleted, UUID projectId, Boolean isInbox, String priority,
+            Boolean isStarred, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        Page<Task> tasks = taskRepository.findTasksWithFilters(currentUser.getId(), isCompleted, projectId, pageable);
+        Page<Task> tasks = taskRepository.findTasksWithFilters(
+                currentUser.getId(), isCompleted, projectId, isInbox, priority, isStarred, pageable);
         return tasks.map(this::mapToResponse);
     }
 
@@ -86,16 +99,29 @@ public class TaskService {
         task.setTitle(request.title());
         task.setNotes(request.notes());
         task.setPriority(request.priority());
-        task.setDueDatetime(request.dueDatetime());
+        task.setRrule(request.rrule());
 
-        task.setPriority(request.priority());
-        task.setDueDatetime(request.dueDatetime());
-        task.setRrule(request.rrule()); // <-- ADD THIS LINE
+        // --- Handle Task Completion & Recurrence ---
+        boolean wasCompleted = task.isCompleted();
+        boolean isCompletingNow = request.isCompleted() != null && request.isCompleted() && !wasCompleted;
 
-        // --- Add these lines to handle the toggles ---
-        if (request.isCompleted() != null) {
-            task.setCompleted(request.isCompleted());
+        if (isCompletingNow && task.getRrule() != null && !task.getRrule().isBlank() && task.getDueDatetime() != null) {
+            OffsetDateTime nextDue = calculateNextOccurrence(task.getRrule(), task.getDueDatetime());
+            if (nextDue != null) {
+                task.setDueDatetime(nextDue);
+                // We intentionally do NOT set isCompleted to true, as it's rolled forward.
+            } else {
+                task.setCompleted(true); // Final occurrence reached
+            }
+        } else {
+            if (request.dueDatetime() != null) {
+                task.setDueDatetime(request.dueDatetime());
+            }
+            if (request.isCompleted() != null) {
+                task.setCompleted(request.isCompleted());
+            }
         }
+
         if (request.isStarred() != null) {
             task.setStarred(request.isStarred());
         }
@@ -109,6 +135,12 @@ public class TaskService {
             task.setProject(null);
         }
 
+        // Process Tags
+        updateTasksTags(currentUser, task, request.tags());
+
+        // Process Dependencies
+        updateTaskDependencies(currentUser, task, request.blockedByIds());
+
         Task updatedTask = taskRepository.save(task);
         return mapToResponse(updatedTask);
     }
@@ -116,7 +148,8 @@ public class TaskService {
     @Transactional
     public void deleteTask(UUID taskId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        // Check if exists first to throw proper 404/error if needed, or just attempt delete
+        // Check if exists first to throw proper 404/error if needed, or just attempt
+        // delete
         if (!taskRepository.existsById(taskId)) {
             throw new IllegalArgumentException("Task not found");
         }
@@ -135,8 +168,45 @@ public class TaskService {
                 task.isStarred(),
                 task.getProject() != null ? task.getProject().getId() : null,
                 task.getTaskGroup() != null ? task.getTaskGroup().getId() : null, // Group ID mapped here later
-                task.getCreatedAt()
-        );
+                task.getTags().stream().map(tag -> new TagResponse(tag.getId(), tag.getName(), tag.getColorHex()))
+                        .toList(),
+                task.getCreatedAt());
+    }
+
+    private void updateTasksTags(User user, Task task, List<String> tagNames) {
+        if (tagNames == null)
+            return;
+        java.util.Set<life.arch.tasks.entity.Tag> taskTags = new java.util.HashSet<>();
+        for (String tagName : tagNames) {
+            String sanitizedName = tagName.trim();
+            if (sanitizedName.isEmpty())
+                continue;
+            life.arch.tasks.entity.Tag tag = tagRepository.findByNameAndUserId(sanitizedName, user.getId())
+                    .orElseGet(() -> {
+                        life.arch.tasks.entity.Tag newTag = new life.arch.tasks.entity.Tag();
+                        newTag.setName(sanitizedName);
+                        newTag.setUser(user);
+                        return tagRepository.save(newTag);
+                    });
+            taskTags.add(tag);
+        }
+        task.setTags(taskTags);
+    }
+
+    private void updateTaskDependencies(User user, Task task, List<UUID> blockedByIds) {
+        if (blockedByIds == null)
+            return;
+
+        java.util.Set<Task> blockedBy = new java.util.HashSet<>();
+        if (!blockedByIds.isEmpty()) {
+            List<Task> relatedTasks = taskRepository.findByIdInAndUserId(blockedByIds, user.getId());
+            for (Task t : relatedTasks) {
+                if (task.getId() == null || !t.getId().equals(task.getId())) {
+                    blockedBy.add(t);
+                }
+            }
+        }
+        task.setBlockedBy(blockedBy);
     }
 
     @Transactional(readOnly = true)
@@ -158,8 +228,43 @@ public class TaskService {
         return new TaskDetailResponse(
                 task.getId(), task.getTitle(), task.getNotes(), task.getPriority(),
                 task.getDueDatetime(), task.isCompleted(), task.isStarred(),
-                subtasks, comments
-        );
+                subtasks, comments,
+                task.getTags().stream().map(tag -> new TagResponse(tag.getId(), tag.getName(), tag.getColorHex()))
+                        .toList(),
+                task.getBlockedBy().stream()
+                        .map(t -> new TaskDependencyResponse(t.getId(), t.getTitle(), t.isCompleted())).toList(),
+                task.getBlocking().stream()
+                        .map(t -> new TaskDependencyResponse(t.getId(), t.getTitle(), t.isCompleted())).toList(),
+                task.getAttachments().stream()
+                        .map(a -> new AttachmentResponse(a.getId(), a.getFileName(), a.getFileType(), a.getFileSize(),
+                                "/api/v1/attachments/" + a.getId()))
+                        .toList());
+    }
+
+    private OffsetDateTime calculateNextOccurrence(String rruleStr, OffsetDateTime currentDue) {
+        try {
+            Recur recur = new Recur(rruleStr);
+            java.util.Date start = java.util.Date.from(currentDue.toInstant());
+            DateTime seed = new DateTime(start);
+            // Search starting 1 minute after current due date
+            java.util.Date searchStart = new java.util.Date(start.getTime() + 60000);
+            // Search up to 5 years into the future to find the next valid date
+            java.util.Date searchEnd = new java.util.Date(start.getTime() + 5L * 365 * 24 * 3600 * 1000);
+
+            java.util.List<net.fortuna.ical4j.model.Date> nextDates = recur.getDates(
+                    seed,
+                    new DateTime(searchStart),
+                    new DateTime(searchEnd),
+                    net.fortuna.ical4j.model.parameter.Value.DATE_TIME);
+
+            if (!nextDates.isEmpty()) {
+                java.util.Date next = new java.util.Date(nextDates.get(0).getTime());
+                return next.toInstant().atOffset(java.time.ZoneOffset.UTC);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to calculate next occurrence for RRULE " + rruleStr + ": " + e.getMessage());
+        }
+        return null;
     }
 
     @Transactional
@@ -180,7 +285,8 @@ public class TaskService {
     public SubtaskDto toggleSubtask(UUID taskId, UUID subtaskId) {
         User currentUser = SecurityUtils.getCurrentUser();
         // Verify task ownership first to prevent IDOR attacks
-        if (!taskRepository.existsById(taskId) || taskRepository.findByIdAndUserId(taskId, currentUser.getId()).isEmpty()) {
+        if (!taskRepository.existsById(taskId)
+                || taskRepository.findByIdAndUserId(taskId, currentUser.getId()).isEmpty()) {
             throw new IllegalArgumentException("Task not found");
         }
 

@@ -13,6 +13,7 @@ export interface Habit {
     isCompletedToday: boolean;
     currentStreak: number;
     longestStreak: number;
+    last7Days: boolean[];
 }
 
 export interface PointTransaction {
@@ -119,6 +120,19 @@ export const useRank = () => {
         queryFn: async () => {
             const { data } = await api.get('/points/rank');
             return data;
+        },
+    });
+};
+
+// 8. Archive a Habit
+export const useArchiveHabit = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (habitId: string) => {
+            await api.put(`/habits/${habitId}/archive`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['habits'] });
         },
     });
 };

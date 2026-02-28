@@ -37,7 +37,7 @@ public class HabitController {
     // 3. Log a habit for a specific date (Query param: ?date=2026-02-22)
     @PostMapping("/{habitId}/log")
     public ResponseEntity<Void> logHabit(
-            @PathVariable UUID habitId, 
+            @PathVariable UUID habitId,
             @RequestParam LocalDate date) {
         habitService.logHabit(habitId, date);
         return ResponseEntity.ok().build();
@@ -46,9 +46,16 @@ public class HabitController {
     // 4. Undo a habit log for a specific date
     @DeleteMapping("/{habitId}/log")
     public ResponseEntity<Void> unlogHabit(
-            @PathVariable UUID habitId, 
+            @PathVariable UUID habitId,
             @RequestParam LocalDate date) {
         habitService.unlogHabit(habitId, date);
+        return ResponseEntity.ok().build();
+    }
+
+    // 5. Archive a habit
+    @PutMapping("/{habitId}/archive")
+    public ResponseEntity<Void> archiveHabit(@PathVariable UUID habitId) {
+        habitService.archiveHabit(habitId);
         return ResponseEntity.ok().build();
     }
 }
