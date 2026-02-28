@@ -6,14 +6,15 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record TaskRequest(
-        @NotBlank(message = "Task title cannot be empty")
-        String title,
+        @NotBlank(message = "Task title cannot be empty") String title,
         String notes,
         String priority,
         OffsetDateTime dueDatetime,
-        String rrule,        // <-- ADD THIS LINE
+        String rrule, // <-- ADD THIS LINE
         Boolean isCompleted,
         Boolean isStarred,
         UUID projectId,
-        UUID groupId
-) {}
+        UUID groupId,
+        java.util.List<String> tags,
+        java.util.List<UUID> blockedByIds) {
+}

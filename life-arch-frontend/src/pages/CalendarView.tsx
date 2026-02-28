@@ -15,12 +15,16 @@ import {
   useAddComment,
   useToggleTaskCompletion,
   useUpdateTask,
+  useUploadAttachment,
+  useDeleteAttachment,
 } from "../hooks/useTasks";
+import { downloadFile } from "../lib/api";
 
 // --- Form Validation Schema ---
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   priority: z.string().optional(),
+  rrule: z.string().optional(),
 });
 type TaskFormInputs = z.infer<typeof taskSchema>;
 
@@ -126,7 +130,9 @@ export default function CalendarView() {
     // Merge the form data with the explicitly clicked date
     createTask.mutate(
       {
-        ...data,
+        title: data.title,
+        priority: data.priority || undefined,
+        rrule: data.rrule || undefined,
         dueDatetime: selectedDate || new Date().toISOString(),
       },
       {
@@ -284,6 +290,19 @@ export default function CalendarView() {
                 </select>
               </div>
 
+              <div>
+                <select
+                  {...register("rrule")}
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#85a3c2] outline-none text-slate-600 bg-white"
+                >
+                  <option value="">Does not repeat</option>
+                  <option value="FREQ=DAILY">Daily</option>
+                  <option value="FREQ=WEEKLY">Weekly</option>
+                  <option value="FREQ=MONTHLY">Monthly</option>
+                  <option value="FREQ=YEARLY">Yearly</option>
+                </select>
+              </div>
+
               <div className="flex justify-end gap-3 mt-6 pt-2 border-t border-slate-100">
                 <button
                   type="button"
@@ -317,6 +336,9 @@ function TaskDetailContent({ taskId }: { taskId: string }) {
   const addSubtask = useAddSubtask(taskId);
   const toggleSubtask = useToggleSubtask(taskId);
   const addComment = useAddComment(taskId);
+  const updateTask = useUpdateTask();
+  const uploadAttachment = useUploadAttachment(taskId);
+  const deleteAttachment = useDeleteAttachment(taskId);
 
   const [newSubtask, setNewSubtask] = useState("");
   const [newComment, setNewComment] = useState("");
@@ -358,6 +380,124 @@ function TaskDetailContent({ taskId }: { taskId: string }) {
             {task.priority}
           </span>
         )}
+        {task.tags && task.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {task.tags.map((tag: any) => (
+              <span key={tag.id} className="inline-block px-2 py-0.5 text-[10px] font-bold text-white rounded uppercase tracking-wide shadow-sm" style={{ backgroundColor: tag.colorHex }}>
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Dependencies */}
+      <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 mb-4">
+        <h5 className="font-semibold text-orange-600 mb-3 flex items-center gap-2">Dependencies</h5>
+        
+        {/* Blocked By */}
+        <div className="mb-3">
+          <span className="text-sm font-semibold text-slate-500">Blocked By:</span>
+          {task.blockedBy && task.blockedBy.length > 0 ? (
+            <div className="space-y-1 mt-1 flex flex-col items-start gap-1">
+              {task.blockedBy.map((dep: any) => (
+                <span key={dep.id} className={`text-xs px-2 py-1 flex items-center gap-1.5 rounded-md border ${dep.isCompleted ? 'bg-slate-50 text-slate-400 border-slate-200 line-through' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  {dep.title}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-sm text-slate-400 ml-2">None</span>
+          )}
+        </div>
+
+        {/* Blocking */}
+        <div>
+          <span className="text-sm font-semibold text-slate-500">Blocking:</span>
+          {task.blocking && task.blocking.length > 0 ? (
+            <div className="space-y-1 mt-1 flex flex-col items-start gap-1">
+              {task.blocking.map((dep: any) => (
+                <span key={dep.id} className={`text-xs px-2 py-1 flex items-center gap-1.5 rounded-md border ${dep.isCompleted ? 'bg-slate-50 text-slate-400 border-slate-200 line-through' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                  {dep.title}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-sm text-slate-400 ml-2">None</span>
+          )}
+        </div>
+        
+        <div className="mt-3">
+          <input 
+            type="text" 
+            placeholder="Paste Task ID to block this task (Enter to save)" 
+            className="w-full p-2 text-sm border border-orange-200 rounded bg-white outline-none focus:ring-1 focus:ring-orange-300 transition-shadow"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const val = e.currentTarget.value.trim();
+                if (val) {
+                  const currentIds = task.blockedBy?.map((b: any) => b.id) || [];
+                  if (!currentIds.includes(val)) {
+                    updateTask.mutate({ taskId, updates: { blockedByIds: [...currentIds, val] } });
+                    e.currentTarget.value = "";
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Attachments */}
+      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+        <h5 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">Attachments</h5>
+        <div className="space-y-2 mb-3">
+          {task.attachments && task.attachments.length > 0 ? (
+            task.attachments.map((file: any) => (
+              <div key={file.id} className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 group">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <span className="text-lg">📄</span>
+                    <div className="flex flex-col min-w-0">
+                      <button
+                        onClick={() => downloadFile(`/attachments/${file.id}`, file.fileName)}
+                        className="text-left text-xs font-medium text-slate-700 hover:text-[#85a3c2] truncate outline-none"
+                        title="Download"
+                      >
+                        {file.fileName}
+                      </button>
+                    <span className="text-[10px] text-slate-400">
+                      {(file.fileSize / 1024).toFixed(1)} KB
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => deleteAttachment.mutate(file.id)}
+                  className="p-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-slate-400 italic">No attachments yet.</p>
+          )}
+        </div>
+        <label className="flex items-center justify-center gap-2 w-full p-2 border-2 border-dashed border-slate-200 rounded-lg hover:border-[#85a3c2] hover:bg-slate-100/50 cursor-pointer transition-all group">
+          <input 
+            type="file" 
+            className="hidden" 
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadAttachment.mutate(file);
+            }}
+          />
+          <svg className="w-4 h-4 text-slate-400 group-hover:text-[#85a3c2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+          <span className="text-xs font-medium text-slate-500 group-hover:text-[#85a3c2]">
+            {uploadAttachment.isPending ? "Uploading..." : "Add Attachment"}
+          </span>
+        </label>
       </div>
 
       <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">

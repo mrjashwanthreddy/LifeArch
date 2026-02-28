@@ -29,7 +29,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // setting up CORS to allow requests from our frontend (configured separately in WebConfig) and any other origins we might need
+                // setting up CORS to allow requests from our frontend (configured separately in
+                // WebConfig) and any other origins we might need
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
                     config.setAllowedOrigins(java.util.List.of("*")); // Allow all origins (for development)
@@ -44,7 +45,9 @@ public class SecurityConfig {
                 // 2. Define Endpoint Permissions
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // Open to public (Register/Login)
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // OpenAPI definitions
+                        .requestMatchers("/api/v1/github/callback").permitAll() // Open to public (Redirect from GitHub)
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // OpenAPI
+                                                                                                              // definitions
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated() // Everything else is locked down
                 )

@@ -16,6 +16,7 @@ export interface TaskGroup {
     projectId: string;
     name: string;
     sortOrder: number;
+    wipLimit?: number | null;
 }
 
 // --- Hooks ---
@@ -61,8 +62,8 @@ export const useProjectGroups = (projectId: string) => {
 export const useCreateTaskGroup = (projectId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async (name: string) => {
-            const { data } = await api.post(`/projects/${projectId}/groups`, { name });
+        mutationFn: async ({ name, wipLimit }: { name: string; wipLimit?: number | null }) => {
+            const { data } = await api.post(`/projects/${projectId}/groups`, { name, wipLimit });
             return data;
         },
         onSuccess: () => {
@@ -102,8 +103,8 @@ export const useDeleteProject = () => {
 export const useUpdateTaskGroup = (projectId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ groupId, name }: { groupId: string; name: string }) => {
-            const { data } = await api.put(`/projects/${projectId}/groups/${groupId}`, { name });
+        mutationFn: async ({ groupId, name, wipLimit }: { groupId: string; name: string; wipLimit?: number | null }) => {
+            const { data } = await api.put(`/projects/${projectId}/groups/${groupId}`, { name, wipLimit });
             return data;
         },
         onSuccess: () => {

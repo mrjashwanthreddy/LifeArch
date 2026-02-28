@@ -52,4 +52,18 @@ public class Task extends BaseEntity {
     @JoinColumn(name = "group_id")
     private TaskGroup taskGroup;
 
+    @ManyToMany
+    @JoinTable(name = "task_tags", joinColumns = @JoinColumn(name = "task_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    private java.util.Set<Tag> tags = new java.util.HashSet<>();
+
+    @ManyToMany
+    @JoinTable(name = "task_dependencies", joinColumns = @JoinColumn(name = "task_id"), inverseJoinColumns = @JoinColumn(name = "blocked_by_id"))
+    private java.util.Set<Task> blockedBy = new java.util.HashSet<>();
+
+    @ManyToMany(mappedBy = "blockedBy")
+    private java.util.Set<Task> blocking = new java.util.HashSet<>();
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Attachment> attachments = new java.util.ArrayList<>();
+
 }

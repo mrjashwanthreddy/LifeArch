@@ -96,6 +96,25 @@ public class HabitService {
         pt.setAmount(habit.getPointsReward());
         pt.setDescription("Completed habit: " + habit.getName());
         pointTransactionRepository.save(pt);
+
+        // C. Calculate Streak and Award Bonus
+        List<LocalDate> logDates = habitLogRepository
+                .findByHabitIdOrderByCompletedDateDesc(habit.getId())
+                .stream()
+                .map(HabitLog::getCompletedDate)
+                .toList();
+
+        int[] streaks = calculateStreaks(logDates, date);
+        int currentStreak = streaks[0];
+
+        // Award 50 bonus points for every multiple of 3 days
+        if (currentStreak > 0 && currentStreak % 3 == 0) {
+            PointTransaction bonusPt = new PointTransaction();
+            bonusPt.setUser(currentUser);
+            bonusPt.setAmount(50);
+            bonusPt.setDescription(currentStreak + "-Day Streak Bonus: " + habit.getName() + " on " + date.toString());
+            pointTransactionRepository.save(bonusPt);
+        }
     }
 
     // 4. Undo a Habit Log AND Deduct Points
@@ -122,6 +141,22 @@ public class HabitService {
             pt.setAmount(-habit.getPointsReward());
             pt.setDescription("Undid habit: " + habit.getName());
             pointTransactionRepository.save(pt);
+
+            // C. Find and Revert any Streak Bonus awarded for this date
+            // The description format we use for bonuses includes the date string
+            String bonusDescFragment = "Day Streak Bonus: " + habit.getName() + " on " + date.toString();
+            List<PointTransaction> userTxs = pointTransactionRepository
+                    .findByUserIdOrderByCreatedAtDesc(currentUser.getId());
+            for (PointTransaction userTx : userTxs) {
+                if (userTx.getDescription().contains(bonusDescFragment) && userTx.getAmount() > 0) {
+                    PointTransaction reverseBonusPt = new PointTransaction();
+                    reverseBonusPt.setUser(currentUser);
+                    reverseBonusPt.setAmount(-userTx.getAmount());
+                    reverseBonusPt.setDescription("Reversed " + userTx.getDescription());
+                    pointTransactionRepository.save(reverseBonusPt);
+                    break;
+                }
+            }
         }
     }
 

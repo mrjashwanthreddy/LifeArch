@@ -95,6 +95,9 @@ export default function ProjectView() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
 
+  const [editingWipGroupId, setEditingWipGroupId] = useState<string | null>(null);
+  const [editingWipLimit, setEditingWipLimit] = useState<number | "">("");
+
   // Local state for optimistic drag-and-drop updates
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
 
@@ -112,12 +115,15 @@ export default function ProjectView() {
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
     if (newGroupName.trim()) {
-      createGroup.mutate(newGroupName, {
-        onSuccess: () => {
-          setNewGroupName("");
-          setIsAddingGroup(false);
-        },
-      });
+      createGroup.mutate(
+        { name: newGroupName }, 
+        {
+          onSuccess: () => {
+            setNewGroupName("");
+            setIsAddingGroup(false);
+          },
+        }
+      );
     }
   };
 
@@ -254,7 +260,7 @@ export default function ProjectView() {
                           onChange={(e) => setEditingGroupName(e.target.value)}
                           onBlur={() => {
                             if (editingGroupName.trim() && editingGroupName !== group.name) {
-                              updateGroup.mutate({ groupId: group.id, name: editingGroupName });
+                              updateGroup.mutate({ groupId: group.id, name: editingGroupName, wipLimit: group.wipLimit });
                             }
                             setEditingGroupId(null);
                           }}
@@ -292,11 +298,48 @@ export default function ProjectView() {
                       </button>
                     </div>
 
-                    <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm ml-2 ${theme.badgeBg} ${theme.badgeText}`}
-                    >
-                      {groupTasks.length}
-                    </span>
+                    {editingWipGroupId === group.id ? (
+                      <input
+                        autoFocus
+                        type="number"
+                        min="1"
+                        placeholder="∞"
+                        className={`w-12 text-xs font-bold px-1 py-0.5 rounded outline-none shadow-inner border border-slate-300 text-slate-800 ml-2`}
+                        value={editingWipLimit}
+                        onChange={(e) => setEditingWipLimit(e.target.value === "" ? "" : parseInt(e.target.value))}
+                        onBlur={() => {
+                          let val = editingWipLimit === "" ? null : Number(editingWipLimit);
+                          if (val !== group.wipLimit) {
+                            updateGroup.mutate({ groupId: group.id, name: group.name, wipLimit: val });
+                          }
+                          setEditingWipGroupId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (e.key === "Escape") setEditingWipGroupId(null);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center ml-2 relative group/wip cursor-pointer" onClick={() => {
+                        setEditingWipLimit(group.wipLimit || "");
+                        setEditingWipGroupId(group.id);
+                      }}>
+                        <span
+                          className={`text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm ${
+                            group.wipLimit && groupTasks.length > group.wipLimit
+                              ? "bg-red-100 text-red-700 ring-2 ring-red-400 animate-pulse"
+                              : `${theme.badgeBg} ${theme.badgeText}`
+                          }`}
+                          title={group.wipLimit ? `Limit: ${group.wipLimit}` : "Set WIP Limit"}
+                        >
+                          {groupTasks.length} {group.wipLimit ? `/ ${group.wipLimit}` : ""}
+                        </span>
+                        {/* Tooltip hint on hover */}
+                        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/wip:opacity-100 pointer-events-none transition-opacity z-20">
+                          {group.wipLimit ? "Edit limit" : "Set WIP limit"}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Droppable Task Container */}
@@ -333,11 +376,18 @@ export default function ProjectView() {
                                       {task.title}
                                     </p>
                                   </div>
-                                  {task.priority && (
-                                    <span className="inline-block px-2 py-0.5 bg-slate-100 text-[10px] font-bold text-slate-500 rounded uppercase tracking-wide">
-                                      {task.priority}
-                                    </span>
-                                  )}
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {task.priority && (
+                                      <span className="inline-block px-2 py-0.5 bg-slate-100 text-[10px] font-bold text-slate-500 rounded uppercase tracking-wide">
+                                        {task.priority}
+                                      </span>
+                                    )}
+                                    {task.tags && task.tags.map((tag: any) => (
+                                      <span key={tag.id} className="inline-block px-2 py-0.5 text-[10px] font-bold text-white rounded uppercase tracking-wide shadow-sm" style={{ backgroundColor: tag.colorHex }}>
+                                        {tag.name}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </Draggable>

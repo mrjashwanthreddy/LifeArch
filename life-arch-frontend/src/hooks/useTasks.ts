@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
+import type { Tag } from './useTags';
+
 // Types matching your Spring Boot DTOs
 export interface Task {
     id: string;
@@ -10,8 +12,10 @@ export interface Task {
     dueDatetime?: string;
     isCompleted: boolean;
     isStarred: boolean;
-    projectId?: string; // <-- Add this
-    groupId?: string;   // <-- Add this
+    projectId?: string;
+    groupId?: string;
+    tags?: Tag[];
+    rrule?: string;
 }
 
 interface TaskPage {
@@ -27,6 +31,8 @@ export interface TaskQueryParams {
     projectId?: string;
     isInbox?: boolean;
     isCompleted?: boolean;
+    priority?: string;
+    isStarred?: boolean;
 }
 
 export const useTasks = (params: TaskQueryParams = { page: 0, size: 20 }) => {
@@ -39,6 +45,8 @@ export const useTasks = (params: TaskQueryParams = { page: 0, size: 20 }) => {
             if (params.projectId) queryParams.append('projectId', params.projectId);
             if (params.isInbox !== undefined) queryParams.append('isInbox', params.isInbox.toString());
             if (params.isCompleted !== undefined) queryParams.append('isCompleted', params.isCompleted.toString());
+            if (params.priority !== undefined) queryParams.append('priority', params.priority);
+            if (params.isStarred !== undefined) queryParams.append('isStarred', params.isStarred.toString());
             
             const { data } = await api.get(`/tasks?${queryParams.toString()}`);
             return data;
@@ -51,7 +59,7 @@ export const useCreateTask = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (newTask: Partial<Task>) => {
+        mutationFn: async (newTask: { title: string; priority?: string; dueDatetime?: string; projectId?: string; groupId?: string; isInbox?: boolean; tags?: string[]; rrule?: string; blockedByIds?: string[] }) => {
             const { data } = await api.post('/tasks', newTask);
             return data;
         },
@@ -83,7 +91,7 @@ export const useToggleTaskCompletion = () => {
 export const useUpdateTask = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => {
+        mutationFn: async ({ taskId, updates }: { taskId: string; updates: Omit<Partial<Task>, 'tags'> & { tags?: string[]; blockedByIds?: string[] } }) => {
             const { data } = await api.put(`/tasks/${taskId}`, updates);
             return data;
         },
@@ -108,12 +116,18 @@ export const useDeleteTask = () => {
 };
 
 
+export interface TaskDependency { id: string; title: string; isCompleted: boolean; }
 export interface Subtask { id: string; title: string; isCompleted: boolean; }
 export interface Comment { id: string; content: string; createdAt: string; }
+export interface Attachment { id: string; fileName: string; fileType: string; fileSize: number; downloadUrl: string; }
 
 export interface TaskDetail extends Task {
+    rrule?: string;
     subtasks: Subtask[];
     comments: Comment[];
+    blockedBy: TaskDependency[];
+    blocking: TaskDependency[];
+    attachments: Attachment[];
 }
 
 // 1. Fetch details
@@ -202,5 +216,32 @@ export const useMoveTask = () => {
             // Refresh tasks to snap it into the new column
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
         },
+    });
+};
+
+// 5. Add Attachment
+export const useUploadAttachment = (taskId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            const { data } = await api.post(`/tasks/${taskId}/attachments`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return data;
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['task', taskId] }),
+    });
+};
+
+// 6. Delete Attachment
+export const useDeleteAttachment = (taskId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (attachmentId: string) => {
+            await api.delete(`/attachments/${attachmentId}`);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['task', taskId] }),
     });
 };

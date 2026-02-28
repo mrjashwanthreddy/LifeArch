@@ -46,7 +46,7 @@ public class ProjectService {
         Project saved = projectRepository.save(project);
 
         // Auto-create a default group for the new project
-        createTaskGroup(saved.getId(), new TaskGroupRequest("To Do"));
+        createTaskGroup(saved.getId(), new TaskGroupRequest("To Do", null));
 
         return mapToProjectResponse(saved);
     }
@@ -101,6 +101,7 @@ public class ProjectService {
         group.setUser(currentUser); // <-- ADD THIS LINE
         group.setName(request.name());
         group.setSortOrder(nextOrder);
+        group.setWipLimit(request.wipLimit());
 
         TaskGroup saved = taskGroupRepository.save(group);
         return mapToGroupResponse(saved);
@@ -132,6 +133,7 @@ public class ProjectService {
             throw new IllegalArgumentException("Access denied");
         }
         group.setName(request.name());
+        group.setWipLimit(request.wipLimit());
         return mapToGroupResponse(taskGroupRepository.save(group));
     }
 
@@ -158,6 +160,6 @@ public class ProjectService {
 
     private TaskGroupResponse mapToGroupResponse(TaskGroup group) {
         return new TaskGroupResponse(
-                group.getId(), group.getProject().getId(), group.getName(), group.getSortOrder());
+                group.getId(), group.getProject().getId(), group.getName(), group.getSortOrder(), group.getWipLimit());
     }
 }

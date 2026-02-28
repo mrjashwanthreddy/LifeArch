@@ -16,6 +16,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 1. Enforce user ownership on standard fetch
     Optional<Task> findByIdAndUserId(UUID id, UUID userId);
 
+    // Fetch multiple tasks securely
+    List<Task> findByIdInAndUserId(List<UUID> ids, UUID userId);
+
     // 2. Fetch all tasks for a user with optional filters (completed status,
     // project, inbox)
     @Query("""
@@ -24,12 +27,16 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
                 AND (:isCompleted IS NULL OR t.isCompleted = :isCompleted)
                 AND (:isInbox IS NULL OR (:isInbox = true AND t.project IS NULL))
                 AND (:projectId IS NULL OR t.project.id = :projectId)
+                AND (:priority IS NULL OR t.priority = :priority)
+                AND (:isStarred IS NULL OR t.isStarred = :isStarred)
             """)
     Page<Task> findTasksWithFilters(
             @Param("userId") UUID userId,
             @Param("isCompleted") Boolean isCompleted,
             @Param("projectId") UUID projectId,
             @Param("isInbox") Boolean isInbox,
+            @Param("priority") String priority,
+            @Param("isStarred") Boolean isStarred,
             Pageable pageable);
 
     // 3. Optimized delete (prevents fetching the entity just to delete it)
