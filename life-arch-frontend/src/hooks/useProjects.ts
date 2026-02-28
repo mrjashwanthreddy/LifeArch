@@ -16,6 +16,7 @@ export interface TaskGroup {
     projectId: string;
     name: string;
     sortOrder: number;
+    wipLimit?: number | null;
 }
 
 // --- Hooks ---
@@ -61,12 +62,67 @@ export const useProjectGroups = (projectId: string) => {
 export const useCreateTaskGroup = (projectId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async (name: string) => {
-            const { data } = await api.post(`/projects/${projectId}/groups`, { name });
+        mutationFn: async ({ name, wipLimit }: { name: string; wipLimit?: number | null }) => {
+            const { data } = await api.post(`/projects/${projectId}/groups`, { name, wipLimit });
             return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'groups'] });
+        },
+    });
+};
+
+// Update a project
+export const useUpdateProject = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ projectId, updates }: { projectId: string; updates: { name?: string; description?: string; colorHex?: string } }) => {
+            const { data } = await api.put(`/projects/${projectId}`, updates);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+        },
+    });
+};
+
+// Delete a project
+export const useDeleteProject = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (projectId: string) => {
+            await api.delete(`/projects/${projectId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+        },
+    });
+};
+
+// Update a task group
+export const useUpdateTaskGroup = (projectId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ groupId, name, wipLimit }: { groupId: string; name: string; wipLimit?: number | null }) => {
+            const { data } = await api.put(`/projects/${projectId}/groups/${groupId}`, { name, wipLimit });
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'groups'] });
+        },
+    });
+};
+
+// Delete a task group
+export const useDeleteTaskGroup = (projectId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (groupId: string) => {
+            await api.delete(`/projects/${projectId}/groups/${groupId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'groups'] });
+            queryClient.invalidateQueries({ queryKey: ['tasks'] }); // Tasks group mapping updated
         },
     });
 };

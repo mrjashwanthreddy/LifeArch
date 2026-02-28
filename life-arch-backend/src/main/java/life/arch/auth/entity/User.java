@@ -14,6 +14,9 @@ import lombok.Setter;
 public class User extends BaseEntity {
 
     // Getters and Setters...
+    @Column(name = "full_name")
+    private String fullName;
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -22,5 +25,11 @@ public class User extends BaseEntity {
 
     @Column(length = 50)
     private String timezone = "UTC";
+
+    @Column(name = "github_username")
+    private String githubUsername;
+
+    @Column(name = "github_connected", nullable = false)
+    private boolean githubConnected = false;
 
 }

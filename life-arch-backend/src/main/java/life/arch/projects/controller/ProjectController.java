@@ -35,6 +35,18 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getActiveProjects());
     }
 
+    @PutMapping("/{projectId}")
+    public ResponseEntity<ProjectResponse> updateProject(@PathVariable UUID projectId,
+            @Valid @RequestBody ProjectRequest request) {
+        return ResponseEntity.ok(projectService.updateProject(projectId, request));
+    }
+
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<Void> deleteProject(@PathVariable UUID projectId) {
+        projectService.deleteProject(projectId);
+        return ResponseEntity.ok().build();
+    }
+
     // --- Task Groups (Nested Routes) ---
 
     @PostMapping("/{projectId}/groups")
@@ -47,5 +59,21 @@ public class ProjectController {
     @GetMapping("/{projectId}/groups")
     public ResponseEntity<List<TaskGroupResponse>> getProjectGroups(@PathVariable UUID projectId) {
         return ResponseEntity.ok(projectService.getProjectGroups(projectId));
+    }
+
+    @PutMapping("/{projectId}/groups/{groupId}")
+    public ResponseEntity<TaskGroupResponse> updateTaskGroup(
+            @PathVariable UUID projectId,
+            @PathVariable UUID groupId,
+            @Valid @RequestBody TaskGroupRequest request) {
+        return ResponseEntity.ok(projectService.updateTaskGroup(projectId, groupId, request));
+    }
+
+    @DeleteMapping("/{projectId}/groups/{groupId}")
+    public ResponseEntity<Void> deleteTaskGroup(
+            @PathVariable UUID projectId,
+            @PathVariable UUID groupId) {
+        projectService.deleteTaskGroup(projectId, groupId);
+        return ResponseEntity.ok().build();
     }
 }

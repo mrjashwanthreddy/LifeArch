@@ -8,6 +8,7 @@ import { useAuthStore } from "../store/authStore";
 
 // 1. Define the validation schema (matching our backend constraints)
 const registerSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -32,10 +33,9 @@ export default function Register() {
       setServerError(null);
       const response = await api.post("/auth/register", data);
 
-      setAuth(response.data.token, response.data.email);
+      setAuth(response.data.token, response.data.email, response.data.fullName);
       navigate("/app", { replace: true });
     } catch (error: any) {
-      // If the backend throws our IllegalArgumentException for duplicate email
       setServerError(
         error.response?.data?.message ||
           "Registration failed. Email might already be in use.",
@@ -44,46 +44,73 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-md border border-gray-100">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Create an Account
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+      <div className="max-w-md w-full p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#85a3c2] rounded-xl text-white text-2xl font-bold mb-4 shadow-lg shadow-blue-500/20">
+            L
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+            Create an Account
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+            Join LifeArch and start organizing your productivity.
+          </p>
+        </div>
 
         {serverError && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-200">
-            {serverError}
+          <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-semibold rounded-lg border border-red-100 dark:border-red-900/30 flex items-center gap-2">
+            <span className="text-lg">⚠️</span> {serverError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+              Full Name
+            </label>
+            <input
+              {...register("fullName")}
+              type="text"
+              placeholder="John Doe"
+              className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#85a3c2] outline-none transition-all text-slate-800 dark:text-slate-200"
+            />
+            {errors.fullName && (
+              <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 uppercase">
+                {errors.fullName.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+              Email Address
             </label>
             <input
               {...register("email")}
               type="email"
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="name@example.com"
+              className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#85a3c2] outline-none transition-all text-slate-800 dark:text-slate-200"
             />
             {errors.email && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 uppercase">
                 {errors.email.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
               Password
             </label>
             <input
               {...register("password")}
               type="password"
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="••••••••"
+              className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#85a3c2] outline-none transition-all text-slate-800 dark:text-slate-200"
             />
             {errors.password && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 uppercase">
                 {errors.password.message}
               </p>
             )}
@@ -92,9 +119,19 @@ export default function Register() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded transition-colors disabled:opacity-50"
+            className="w-full py-3.5 px-4 bg-[#85a3c2] hover:bg-[#7291b0] text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isSubmitting ? "Creating account..." : "Sign Up"}
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating account...
+              </>
+            ) : (
+              "Get Started"
+            )}
           </button>
         </form>
 

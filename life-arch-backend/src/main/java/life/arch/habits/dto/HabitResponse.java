@@ -4,14 +4,15 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record HabitResponse(
-                UUID id,
-                String name,
-                String description,
-                String frequency,
-                int pointsReward,
-                boolean isArchived,
-                OffsetDateTime createdAt,
-                boolean isCompletedToday,
-                int currentStreak,
-                int longestStreak) {
+        UUID id,
+        String name,
+        String description,
+        String frequency,
+        int pointsReward,
+        boolean isArchived,
+        OffsetDateTime createdAt,
+        boolean isCompletedToday,
+        int currentStreak,
+        int longestStreak,
+        java.util.List<Boolean> last7Days) {
 }

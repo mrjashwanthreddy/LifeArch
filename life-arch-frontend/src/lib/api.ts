@@ -37,3 +37,31 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Helper to download a file from an authenticated endpoint.
+ * Fetches the file as a Blob using the authenticated Axios instance,
+ * then triggers a browser download.
+ */
+export const downloadFile = async (url: string, filename: string) => {
+  try {
+    const response = await api.get(url, {
+      responseType: 'blob',
+    });
+    
+    // Create a temporary link element to trigger the download
+    const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Download failed:', error);
+    alert('Failed to download file. Please try again.');
+  }
+};

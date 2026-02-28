@@ -3,6 +3,7 @@ import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useProjects, useCreateProject } from "../hooks/useProjects";
 import { useRank } from "../hooks/useHabits";
+import { useSavedFilters } from "../hooks/useSavedFilters";
 import { useThemeStore } from "../store/themeStore";
 
 const PROJECT_COLORS = ["#7aa39c", "#85a3c2", "#eba49c", "#d9c5b2", "#b4a5c8"];
@@ -18,8 +19,9 @@ const navCls =
     }`;
 
 export default function AppLayout() {
-  const { email, logout } = useAuthStore();
+  const { email, fullName, logout } = useAuthStore();
   const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: filters, isLoading: filtersLoading } = useSavedFilters();
   const createProject = useCreateProject();
   const { data: rank } = useRank();
   const { isDark, toggle } = useThemeStore();
@@ -97,9 +99,11 @@ export default function AppLayout() {
       >
         {/* Logo + controls */}
         <div className="p-5 flex items-center justify-between flex-shrink-0">
-          <h1 className="text-xl font-bold text-slate-700 dark:text-slate-100 tracking-tight">
-            LifeArch
-          </h1>
+          <NavLink to="/app" className="hover:opacity-80 transition-opacity">
+            <h1 className="text-xl font-bold text-slate-700 dark:text-slate-100 tracking-tight">
+              LifeArch
+            </h1>
+          </NavLink>
           <div className="flex items-center gap-1">
             {/* Dark mode toggle */}
             <button
@@ -201,6 +205,36 @@ export default function AppLayout() {
               )}
             </div>
           </div>
+
+          {/* Views & Filters */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between px-3 mb-2">
+              <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Filters
+              </h2>
+            </div>
+            <div className="space-y-1">
+              {filtersLoading ? (
+                <div className="px-3 text-sm text-slate-400 animate-pulse">Loading...</div>
+              ) : filters?.length === 0 ? (
+                <div className="px-3 text-xs text-slate-400 italic">No custom filters.</div>
+              ) : (
+                filters?.map((filter) => (
+                  <NavLink
+                    key={filter.id}
+                    to={`/app?${filter.queryString}`}
+                    className={navCls("bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200")}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
+                      style={{ backgroundColor: filter.colorHex }}
+                    />
+                    <span className="truncate">{filter.name}</span>
+                  </NavLink>
+                ))
+              )}
+            </div>
+          </div>
         </nav>
 
         {/* Rank card + user footer */}
@@ -238,12 +272,13 @@ export default function AppLayout() {
             <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           )}
           <div className="flex items-center justify-between px-1">
-            <span
-              className="text-xs text-slate-500 dark:text-slate-400 truncate pr-2"
-              title={email || ""}
+            <NavLink
+              to="/app/profile"
+              className={({ isActive }) => `text-xs font-bold truncate pr-2 transition-colors ${isActive ? 'text-[#85a3c2]' : 'text-slate-600 dark:text-slate-200 hover:text-slate-800 dark:hover:text-white'}`}
+              title={`Logged in as ${email}`}
             >
-              {email}
-            </span>
+              {fullName || email}
+            </NavLink>
             <button
               onClick={logout}
               className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"

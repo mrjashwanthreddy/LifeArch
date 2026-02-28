@@ -33,21 +33,21 @@ public class ProjectService {
     @Transactional
     public ProjectResponse createProject(ProjectRequest request) {
         User currentUser = SecurityUtils.getCurrentUser();
-        
+
         Project project = new Project();
         project.setUser(currentUser);
         project.setName(request.name());
         project.setDescription(request.description());
-        
+
         if (request.colorHex() != null && !request.colorHex().isBlank()) {
             project.setColorHex(request.colorHex());
         }
 
         Project saved = projectRepository.save(project);
-        
+
         // Auto-create a default group for the new project
-        createTaskGroup(saved.getId(), new TaskGroupRequest("To Do"));
-        
+        createTaskGroup(saved.getId(), new TaskGroupRequest("To Do", null));
+
         return mapToProjectResponse(saved);
     }
 
@@ -58,6 +58,29 @@ public class ProjectService {
                 .stream()
                 .map(this::mapToProjectResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ProjectResponse updateProject(UUID projectId, ProjectRequest request) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        Project project = projectRepository.findByIdAndUserId(projectId, currentUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        project.setName(request.name());
+        project.setDescription(request.description());
+        if (request.colorHex() != null && !request.colorHex().isBlank()) {
+            project.setColorHex(request.colorHex());
+        }
+
+        return mapToProjectResponse(projectRepository.save(project));
+    }
+
+    @Transactional
+    public void deleteProject(UUID projectId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        Project project = projectRepository.findByIdAndUserId(projectId, currentUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        projectRepository.delete(project);
     }
 
     // --- Task Group Methods ---
@@ -78,6 +101,7 @@ public class ProjectService {
         group.setUser(currentUser); // <-- ADD THIS LINE
         group.setName(request.name());
         group.setSortOrder(nextOrder);
+        group.setWipLimit(request.wipLimit());
 
         TaskGroup saved = taskGroupRepository.save(group);
         return mapToGroupResponse(saved);
@@ -86,7 +110,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<TaskGroupResponse> getProjectGroups(UUID projectId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        
+
         // Verify ownership before returning data
         if (projectRepository.findByIdAndUserId(projectId, currentUser.getId()).isEmpty()) {
             throw new IllegalArgumentException("Project not found or access denied");
@@ -98,18 +122,44 @@ public class ProjectService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public TaskGroupResponse updateTaskGroup(UUID projectId, UUID groupId, TaskGroupRequest request) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        TaskGroup group = taskGroupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        if (!group.getProject().getId().equals(projectId)
+                || !group.getProject().getUser().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("Access denied");
+        }
+        group.setName(request.name());
+        group.setWipLimit(request.wipLimit());
+        return mapToGroupResponse(taskGroupRepository.save(group));
+    }
+
+    @Transactional
+    public void deleteTaskGroup(UUID projectId, UUID groupId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        TaskGroup group = taskGroupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        if (!group.getProject().getId().equals(projectId)
+                || !group.getProject().getUser().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("Access denied");
+        }
+        taskGroupRepository.delete(group);
+    }
+
     // --- Mappers ---
 
     private ProjectResponse mapToProjectResponse(Project project) {
         return new ProjectResponse(
-                project.getId(), project.getName(), project.getDescription(), 
-                project.getColorHex(), project.isArchived(), project.getCreatedAt()
-        );
+                project.getId(), project.getName(), project.getDescription(),
+                project.getColorHex(), project.isArchived(), project.getCreatedAt());
     }
 
     private TaskGroupResponse mapToGroupResponse(TaskGroup group) {
         return new TaskGroupResponse(
-                group.getId(), group.getProject().getId(), group.getName(), group.getSortOrder()
-        );
+                group.getId(), group.getProject().getId(), group.getName(), group.getSortOrder(), group.getWipLimit());
     }
 }
