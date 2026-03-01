@@ -30,7 +30,7 @@ application:
       expiration-ms: 86400000 # 24 hours in milliseconds
 
 github:
-  client-id: ${JWT_SECRET_KEY}
+  client-id: ${GITHUB_CLIENT_ID}
   client-secret: ${GITHUB_CLIENT_SECRET}
   redirect-uri: ${GITHUB_REDIRECT_URI}
 

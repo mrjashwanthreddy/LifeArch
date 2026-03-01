@@ -23,6 +23,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
@@ -33,7 +36,10 @@ public class SecurityConfig {
                 // WebConfig) and any other origins we might need
                 .cors(cors -> cors.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
-                    config.setAllowedOrigins(java.util.List.of("*")); // Allow all origins (for development)
+                    config.setAllowedOrigins(java.util.List.of(frontendUrl, "http://localhost:5173")); // Allow
+                                                                                                       // production
+                                                                                                       // frontend and
+                                                                                                       // local dev
                     config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     config.setAllowedHeaders(java.util.List.of("*"));
                     return config;
